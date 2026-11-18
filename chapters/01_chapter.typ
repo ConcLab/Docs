@@ -1,5 +1,6 @@
 #import "../common/common.typ": mainColor
-#import "../common/commonSlide.typ": slide
+#import "../common/commonSlide.typ": hint, slide
+#import "@preview/dtree:0.1.1": dtree
 
 #let fillColor = green
 
@@ -244,4 +245,331 @@
       #memAllocSeq((1, 1, 1))
     ],
   )
+]
+
+#slide("2004 Available Solutions")[
+  #grid(
+    columns: (50%, 50%),
+    align: (x, y) => {
+      if x == 0 {
+        left + horizon
+      } else {
+        center + horizon
+      }
+    },
+    [
+      - The standard implementation of malloc is, \ in many systems, *not thread-safe*
+        - A _beautiful_ *lock* is acquired upon malloc \
+          invocation
+    ],
+    [
+      #image("../img/mdi--lock.svg", width: 20%)
+    ],
+  )
+
+  #align(center)[*Two alternative were available*]
+  #grid(
+    columns: (50%, 50%),
+    align: left,
+    [
+      #align(center)[*Ptmalloc*]
+      - Created by Wolfram Gloger, based on an allocator created by Doug Lea
+      - A better solution than the standard allocator, good results in most of the cases
+        - Specifically, the producer-consumer pattern is problematic
+        - Memory always returned to the owner (*Blowup problem*)
+    ],
+    [
+      #align(center)[*Hoard*]
+      - Created by Emery D. Berger, Kathryn S. McKinley, Robert D. Blumofe, Paul R. Wilson
+      - Tries to solve the *Blowup problem* while achieving better results
+      - Still some scalability issues on producer-consumer pattern
+    ],
+  )
+
+  #align(center)[Despite the differences, a common problem: *both still use locks!*]
+]
+
+#slide("Goals")[
+  #align(center + horizon)[
+    #grid(
+      columns: (40%, 60%),
+      inset: 0.5em,
+      align: (x, y) => {
+        if x == 0 {
+          left + horizon
+        } else {
+          center + horizon
+        }
+      },
+      [
+        - A more appropriate solutions should avoid locks entirely
+          - but still allowing to be used concurrently...
+          - ...without *deadlocks* and *livelocks*
+
+        - This would allow the algorithm to also be used with *signals*
+
+        - Only widely available instructions should be used
+          - like *CAS* or *LL/SC* (the _first_ can be implemented with the _second_)
+
+        - The algorithm should work in a general case, without assumption that would make the function work only in specific cases
+      ],
+      [
+
+        #image("../img/mdi--format-list-bulleted-square.svg", width: 20%)
+        #hint(
+          [
+            *Note on LL/SC*
+            #grid(
+              columns: (50%, 50%),
+              align: (x, y) => {
+                if (y == 0) {
+                  center + horizon
+                } else {
+                  left + top
+                }
+              },
+              [*LL*], [*SC*],
+              [
+                #v(1em)
+                ```
+                func LL(addr) {
+                  flag(addr)=thread_id
+                  return mem[addr]
+                }
+                ```
+              ],
+              [
+                #v(1em)
+                ```
+                func SC(addr,val) {
+                  if(flag(addr)==thread_id) {
+                    mem[addr]=val
+                    flag[addr]=null
+                    return true
+                  }
+                  return false
+                }
+                ```
+              ],
+            )
+          ],
+          txtSize: 1em,
+        )
+      ],
+    )
+  ]
+]
+
+#slide("A Lock-Free Allocator (1/y)")[
+  #grid(
+    columns: (50%, 50%),
+    align: (x, y) => {
+      if (x == 0) {
+        left
+      } else {
+        center + horizon
+      }
+    },
+    [
+      - Designed by Maged M. Michael
+        - Does not use locks
+        - Uses CAS only
+    ],
+    [
+
+    ],
+  )
+]
+
+#slide("A Lock-Free Allocator (2/y)")[
+  #align(center + horizon)[
+    #grid(
+      columns: (50%, 50%),
+      align: (x, y) => {
+        if (x == 0) {
+          left + top
+        } else {
+          center + horizon
+        }
+      },
+      [
+        - Designed by Maged M. Michael
+          - Does not use locks
+          - Uses CAS only
+        - The Heap is divided into *superblocks*
+      ],
+      [
+        #figure(
+          caption: "Allocator structures",
+          image("../img/fig1.svg", width: 60%),
+        )
+      ],
+    )
+  ]
+]
+
+#slide("A Lock-Free Allocator (2/y)")[
+  #align(center + horizon)[
+    #grid(
+      columns: (50%, 50%),
+      align: (x, y) => {
+        if (x == 0) {
+          left + top
+        } else {
+          center + horizon
+        }
+      },
+      [
+        - Designed by Maged M. Michael
+          - Does not use locks
+          - Uses CAS only
+        - The Heap is divided into *superblocks*
+        - Each superblock is divided into *blocks*
+          - Each block of the same superblock has the same size...
+          - ...But different superblocks may have blocks of a different size
+      ],
+      [
+        #figure(
+          caption: "Allocator structures",
+          image("../img/fig2.svg", width: 80%),
+        )
+      ],
+    )
+  ]
+]
+
+#slide("A Lock-Free Allocator (2/y)")[
+  #align(center + horizon)[
+    #grid(
+      columns: (50%, 50%),
+      align: (x, y) => {
+        if (x == 0) {
+          left + top
+        } else {
+          center + horizon
+        }
+      },
+      [
+        - Designed by *Maged M. Michael*
+          - Does *not* use locks
+          - Uses CAS only
+        - The Heap is divided into *superblocks*
+        - Each superblock is divided into *blocks*
+          - Each block of the same superblock has the same size...
+          - ...But different superblocks may have blocks of a different size
+        - Superblocks are assigned to different *size classes*, based on their *block size*
+      ],
+      [
+        #figure(
+          caption: "Allocator structures",
+          image("../img/fig3.svg", width: 95%),
+        )
+      ],
+    )
+  ]
+]
+
+#slide("A Lock-Free Allocator (2/y)")[
+  #align(center + horizon)[
+    #grid(
+      columns: (50%, 50%),
+      align: (x, y) => {
+        if (x == 0) {
+          left + top
+        } else {
+          center + horizon
+        }
+      },
+      [
+        - Designed by *Maged M. Michael*
+          - Does *not* use locks
+          - Uses CAS only
+        - The Heap is divided into *superblocks*
+        - Each superblock is divided into *blocks*
+          - Each block of the same superblock has the same size...
+          - ...But different superblocks may have blocks of a different size
+        - Superblocks are assigned to different *size classes*, based on their *block size*
+        - Each size class groups its superblocks into groups called *processor heaps*
+          - Specifically, as much processor heaps as the number of processors in the system
+      ],
+      [
+        #figure(
+          caption: "Allocator structures",
+          kind: image,
+
+          text()[
+            #dtree(
+              size: 1em,
+              ```
+              Size Class (size 1)
+                Processor Heap 0
+                Processor Heap 1
+              Size Class (size 2)
+                Processor Heap 0
+                Processor Heap 1
+              ```,
+            )
+          ],
+        )
+      ],
+    )
+  ]
+]
+
+#slide("A Lock-Free Allocator (2/y)")[
+  #align(center + horizon)[
+    #grid(
+      columns: (50%, 50%),
+      align: (x, y) => {
+        if (x == 0) {
+          left + top
+        } else {
+          center + horizon
+        }
+      },
+      [
+        - Designed by *Maged M. Michael*
+          - Does *not* use locks
+          - Uses CAS only
+        - The Heap is divided into *superblocks*
+        - Each superblock is divided into *blocks*
+          - Each block of the same superblock has the same size...
+          - ...But different superblocks may have blocks of a different size
+        - Superblocks are assigned to different *size classes*, based on their *block size*
+        - Each size class groups its superblocks into groups called *processor heaps*
+          - Specifically, as much processor heaps as the number of processors in the system
+        - Each processor heap has:
+          - 0 or 1 *active superblocks*
+          - 0 or 1 *partial superblocks*
+      ],
+      [
+        #figure(
+          caption: "Allocator structures",
+          kind: image,
+
+          align(left)[
+            #dtree(
+              size: 1em,
+              ```
+              Size Class (size 1)
+                Processor Heap 0
+                  Superblock (active)
+                  Superblock (partial)
+                Processor Heap 1
+                  Superblock (active)
+                  Superblock (partial)
+              Size Class (size 2)
+                Processor Heap 0
+                  Superblock (active)
+                  Superblock (partial)
+                Processor Heap 1
+                  Superblock (active)
+                  Superblock (partial)
+              ```,
+            )
+          ],
+        )
+      ],
+    )
+  ]
 ]
