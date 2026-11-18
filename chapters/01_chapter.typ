@@ -360,7 +360,7 @@
   ]
 ]
 
-#slide("A Lock-Free Allocator (1/y)")[
+#slide("A Lock-Free Allocator - Structure (1/y)")[
   #grid(
     columns: (50%, 50%),
     align: (x, y) => {
@@ -371,7 +371,8 @@
       }
     },
     [
-      - Designed by Maged M. Michael
+      - Designed by *Maged M. Michael*
+        - He created, with *Michael L. Scott* the *M&S queue*
         - Does not use locks
         - Uses CAS only
     ],
@@ -381,7 +382,7 @@
   )
 ]
 
-#slide("A Lock-Free Allocator (2/y)")[
+#slide("A Lock-Free Allocator - Structure (2/y)")[
   #align(center + horizon)[
     #grid(
       columns: (50%, 50%),
@@ -408,7 +409,7 @@
   ]
 ]
 
-#slide("A Lock-Free Allocator (2/y)")[
+#slide("A Lock-Free Allocator - Structure (3/y)")[
   #align(center + horizon)[
     #grid(
       columns: (50%, 50%),
@@ -424,7 +425,7 @@
           - Does not use locks
           - Uses CAS only
         - The Heap is divided into *superblocks*
-        - Each superblock is divided into *blocks*
+        - Each superblock has a descriptor and it is divided into *blocks*
           - Each block of the same superblock has the same size...
           - ...But different superblocks may have blocks of a different size
       ],
@@ -438,7 +439,7 @@
   ]
 ]
 
-#slide("A Lock-Free Allocator (2/y)")[
+#slide("A Lock-Free Allocator - Structure (4/y)")[
   #align(center + horizon)[
     #grid(
       columns: (50%, 50%),
@@ -454,7 +455,7 @@
           - Does *not* use locks
           - Uses CAS only
         - The Heap is divided into *superblocks*
-        - Each superblock is divided into *blocks*
+        - Each superblock has a descriptor and it is divided into *blocks*
           - Each block of the same superblock has the same size...
           - ...But different superblocks may have blocks of a different size
         - Superblocks are assigned to different *size classes*, based on their *block size*
@@ -469,7 +470,7 @@
   ]
 ]
 
-#slide("A Lock-Free Allocator (2/y)")[
+#slide("A Lock-Free Allocator - Structure (5/y)")[
   #align(center + horizon)[
     #grid(
       columns: (50%, 50%),
@@ -485,12 +486,12 @@
           - Does *not* use locks
           - Uses CAS only
         - The Heap is divided into *superblocks*
-        - Each superblock is divided into *blocks*
+        - Each superblock has a descriptor and it is divided into *blocks*
           - Each block of the same superblock has the same size...
           - ...But different superblocks may have blocks of a different size
         - Superblocks are assigned to different *size classes*, based on their *block size*
         - Each size class groups its superblocks into groups called *processor heaps*
-          - Specifically, as much processor heaps as the number of processors in the system
+          - Specifically, as as the number of processors
       ],
       [
         #figure(
@@ -516,7 +517,7 @@
   ]
 ]
 
-#slide("A Lock-Free Allocator (2/y)")[
+#slide("A Lock-Free Allocator - Structure (6/y)")[
   #align(center + horizon)[
     #grid(
       columns: (50%, 50%),
@@ -532,15 +533,15 @@
           - Does *not* use locks
           - Uses CAS only
         - The Heap is divided into *superblocks*
-        - Each superblock is divided into *blocks*
+        - Each superblock has a descriptor and it is divided into *blocks*
           - Each block of the same superblock has the same size...
           - ...But different superblocks may have blocks of a different size
         - Superblocks are assigned to different *size classes*, based on their *block size*
         - Each size class groups its superblocks into groups called *processor heaps*
-          - Specifically, as much processor heaps as the number of processors in the system
-        - Each processor heap has:
-          - 0 or 1 *active superblocks*
-          - 0 or 1 *partial superblocks*
+          - Specifically, as many as the number of processors
+        - Each Processor Heap has:
+          - 0 or 1 *Active superblocks*
+          - 0 or 1 *Partial superblocks*
       ],
       [
         #figure(
@@ -567,6 +568,168 @@
                   Superblock (partial)
               ```,
             )
+          ],
+        )
+      ],
+    )
+  ]
+]
+
+#slide("A Lock-Free Allocator - Structure (7/y)")[
+  #align(center + horizon)[
+    #grid(
+      columns: (50%, 50%),
+      align: (x, y) => {
+        if (x == 0) {
+          left + top
+        } else {
+          center + horizon
+        }
+      },
+      [
+        - As mentioned, a *superblock* may be:
+          - *Full* - all blocks are allocated;
+          - *Empty* - all blocks are free;
+          - *Active* - not Full and the last superblock used by a malloc call on that Processor Heap;
+          - *Partial* - not Full and *not* the last superblock used by a malloc call on that Processor Heap;
+        - The *Processor Heap* keeps the reference of the last *Active* superblock that became *Partial*
+          - All of the other are kept in a *M&S FIFO* queue located in the *Size Class*
+      ],
+      [
+        #hint(
+          [
+            *Note*
+            #align(left)[
+              A superblock become Partial when:
+              - *Thread 1* enters and books a block
+              - *Thread 2* enters and tries to book a block but does not succeed
+              - *Thread 2* will do the booking on another superblock and set this one as *Active*
+              - *Thread 1* notices that *Thread 2* allocated from another superblock, so the superblock of *Thread 2* should be *Active*
+              - *Thread 1* sets its superblock as *Partial*
+            ]
+
+          ],
+          txtSize: 1em,
+        )
+      ],
+    )
+  ]
+]
+
+#slide("A Lock-Free Allocator - Structure (8/y)")[
+  #align(center + horizon)[
+    #grid(
+      columns: (50%, 50%),
+      align: (x, y) => {
+        if (x == 0) {
+          left + top
+        } else {
+          center + horizon
+        }
+      },
+      [
+        *Before continuing, some missing details*:
+        - The *Size Class* representation is as expected
+        #v(90%)
+      ],
+      [
+        #figure(
+          kind: image,
+          caption: "Allocator structures (details)",
+          [
+            #image("../img/sizeclass.svg")
+          ],
+        )
+      ],
+    )
+  ]
+]
+
+#slide("A Lock-Free Allocator - Structure (9/y)")[
+  #align(center + horizon)[
+    #grid(
+      columns: (40%, 60%),
+      align: (x, y) => {
+        if (x == 0) {
+          left + top
+        } else {
+          center + horizon
+        }
+      },
+      [
+        *Before continuing, some missing details*:
+        - The *Size Class* representation is as expected
+        - For the *Processor Heap*, the *Active* superblock has two data:
+          - The pointer to the superblock *descriptor*
+          - A *credits* section, useful for booking. It is always set in such a way that if *n* is the memorized number, *n+1* blocks are available
+        #v(90%)
+      ],
+      [
+        #figure(
+          kind: image,
+          caption: "Allocator structures (details)",
+          [
+            #grid(
+              columns: (50%, 50%),
+              [
+                #image("../img/sizeclass.svg")
+              ],
+              [
+                #image("../img/ProcHeap.svg", width: 110%)
+              ],
+            )
+
+          ],
+        )
+      ],
+    )
+  ]
+]
+
+#slide("A Lock-Free Allocator - Structure (10/y)")[
+  #align(center + horizon)[
+    #grid(
+      columns: (40%, 60%),
+      align: (x, y) => {
+        if (x == 0) {
+          left + top
+        } else {
+          center + horizon
+        }
+      },
+      [
+        *Before continuing, some missing details*:
+        - The *Size Class* representation is as expected
+        - For the *Processor Heap*, the *Active* superblock has two data:
+          - The pointer to the superblock *descriptor*
+          - A *credits* section, useful for booking. It is always set in such a way that if *n* is the memorized number, *n+1* blocks are available
+        - Superblock *Descriptor* has an *Anchor* with:
+          - The index of the first available block
+          - The total number of remaining free blocks
+          - The state of the superblock
+          - A tag (prevents ABA problem)
+        - The *Descriptor* itself contains the block size instead
+        #v(90%)
+      ],
+      [
+        #figure(
+          kind: image,
+          caption: "Allocator structures (details)",
+          [
+            #grid(
+              columns: (50%, 50%),
+              [
+                #image("../img/sizeclass.svg")
+              ],
+              [
+                #image("../img/ProcHeap.svg", width: 110%)
+              ],
+              grid.cell(colspan: 2)[
+                #v(1em)
+                #image("../img/Descriptor.svg")
+              ],
+            )
+
           ],
         )
       ],
