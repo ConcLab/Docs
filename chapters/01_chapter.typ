@@ -592,7 +592,7 @@
           - *Empty* - all blocks are free;
           - *Active* - not Full and the last superblock used by a malloc call on that Processor Heap;
           - *Partial* - not Full and *not* the last superblock used by a malloc call on that Processor Heap;
-        - The *Processor Heap* keeps the reference of the last *Active* superblock that became *Partial*
+        - The *Processor Heap* keeps the reference of one *Active* superblock that became *Partial*
           - All of the other are kept in a *M&S FIFO* queue located in the *Size Class*
       ],
       [
