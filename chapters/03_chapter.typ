@@ -22,6 +22,10 @@
         - Allocating function return an address incremented by 8 bytes
     ],
     [
+      #figure(
+        caption: "Pointer structure",
+        image("../img/free/free-Pointer_struct.drawio.svg"),
+      )
 
     ],
   )
@@ -33,7 +37,7 @@
     inset: 1em,
     align: (x, y) => {
       if (x == 0) {
-        left + horizon
+        left + top
       } else {
         center + horizon
       }
@@ -42,7 +46,10 @@
       + The descriptor of the superblock is recovered
     ],
     [
-
+      #figure(
+        caption: "Free algorithm",
+        image("../img/free/free-descriptor_recovered.drawio.svg"),
+      )
     ],
   )
 ]
@@ -53,28 +60,7 @@
     inset: 1em,
     align: (x, y) => {
       if (x == 0) {
-        left + horizon
-      } else {
-        center + horizon
-      }
-    },
-    [
-      + The descriptor of the superblock is recovered
-      + The Anchor of the superblock is copied
-    ],
-    [
-
-    ],
-  )
-]
-
-#slide("Freeing a block (2/x)")[
-  #grid(
-    columns: (50%, 50%),
-    inset: 1em,
-    align: (x, y) => {
-      if (x == 0) {
-        left + horizon
+        left + top
       } else {
         center + horizon
       }
@@ -82,10 +68,12 @@
     [
       + The descriptor of the superblock is recovered
       + The Anchor of the superblock is copied
-      + The *first_available_block* field of the anchor is set with the current block index
     ],
     [
-
+      #figure(
+        caption: "Free algorithm",
+        image("../img/free/free-Anchor_recovered.drawio.svg"),
+      )
     ],
   )
 ]
@@ -96,7 +84,7 @@
     inset: 1em,
     align: (x, y) => {
       if (x == 0) {
-        left + horizon
+        left + top
       } else {
         center + horizon
       }
@@ -104,13 +92,43 @@
     [
       + The descriptor of the superblock is recovered
       + The Anchor of the superblock is copied
-      + The *first_available_block* field of the anchor is set with the current block index
+      + The *first_available_block* (avail) field of the anchor is set with the current block index
+        - The previous value is saved in the block
+    ],
+    [
+      #figure(
+        caption: "Free algorithm",
+        image("../img/free/free-Avail_mod.drawio.svg"),
+      )
+    ],
+  )
+]
+
+#slide("Freeing a block (2/x)")[
+  #grid(
+    columns: (50%, 50%),
+    inset: 1em,
+    align: (x, y) => {
+      if (x == 0) {
+        left + top
+      } else {
+        center + horizon
+      }
+    },
+    [
+      + The descriptor of the superblock is recovered
+      + The Anchor of the superblock is copied
+      + The *first_available_block* (avail) field of the anchor is set with the current block index
+        - The previous value is saved in the block
       + State of the superblock is checked:
         - If *Full* revert to *Partial*
         - If *Partial*, check if now the superblock is *Empty* // If non-assigned blocks = maxcount -1 (-1 is the current block being freed)
     ],
     [
-
+      #figure(
+        caption: "Free algorithm",
+        image("../img/free/free-State_check.drawio.svg"),
+      )
     ],
   )
 ]
@@ -121,7 +139,7 @@
     inset: 1em,
     align: (x, y) => {
       if (x == 0) {
-        left + horizon
+        left + top
       } else {
         center + horizon
       }
@@ -129,14 +147,18 @@
     [
       + The descriptor of the superblock is recovered
       + The Anchor of the superblock is copied
-      + The *first_available_block* field of the anchor is set with the current block index
+      + The *first_available_block* (avail) field of the anchor is set with the current block index
+        - The previous value is saved in the block
       + State of the superblock is checked:
         - If *Full* revert to *Partial*
         - If *Partial*, check if now the superblock is *Empty* // If non-assigned blocks = maxcount -1 (-1 is the current block being freed)
       + If the superblock is still *Partial*, increment *number_free_blocks* by one
     ],
     [
-
+      #figure(
+        caption: "Free algorithm",
+        image("../img/free/free-Increment_avail.drawio.svg"),
+      )
     ],
   )
 ]
@@ -147,7 +169,7 @@
     inset: 1em,
     align: (x, y) => {
       if (x == 0) {
-        left + horizon
+        left + top
       } else {
         center + horizon
       }
@@ -155,7 +177,8 @@
     [
       + The descriptor of the superblock is recovered
       + The Anchor of the superblock is copied
-      + The *first_available_block* field of the anchor is set with the current block index
+      + The *first_available_block* (avail) field of the anchor is set with the current block index
+        - The previous value is saved in the block
       + State of the superblock is checked:
         - If *Full* revert to *Partial*
         - If *Partial*, check if now the superblock is *Empty* // If non-assigned blocks = maxcount -1 (-1 is the current block being freed)
@@ -164,7 +187,10 @@
         - If *not successful*, repeat from point 2
     ],
     [
-
+      #figure(
+        caption: "Free algorithm",
+        image("../img/free/free-CAS_Anchor.drawio.svg"),
+      )
     ],
   )
 ]
@@ -175,15 +201,17 @@
     inset: 1em,
     align: (x, y) => {
       if (x == 0) {
-        left + horizon
+        left + top
       } else {
         center + horizon
       }
     },
     [
+      #v(-0.5em)
       + The descriptor of the superblock is recovered
       + The Anchor of the superblock is copied
-      + The *first_available_block* field of the anchor is set with the current block index
+      + The *first_available_block* (avail) field of the anchor is set with the current block index
+        - The previous value is saved in the block
       + State of the superblock is checked:
         - If *Full* revert to *Partial*
         - If *Partial*, check if now the superblock is *Empty* // If non-assigned blocks = maxcount -1 (-1 is the current block being freed)
@@ -195,7 +223,10 @@
           - *CAS*: set to null and queue the descriptor, if *not successful* remove the descriptor entirely
     ],
     [
-
+      #figure(
+        caption: "Free algorithm",
+        image("../img/free/free-CAS_Empty.drawio.svg"),
+      )
     ],
   )
 ]
@@ -205,7 +236,7 @@
     columns: (50%, 50%),
     align: (x, y) => {
       if (x == 0) {
-        left + horizon
+        left + top
       } else {
         center + horizon
       }
@@ -225,7 +256,10 @@
           - *CAS*: Try to put the superblock as *Partial* in the *Processor Heap*. Then put the previously registered Partial superblock in the *Partial list*
     ],
     [
-
+      #figure(
+        caption: "Free algorithm",
+        image("../img/free/free-CAS_Full.drawio.svg"),
+      )
     ],
   )
 ]
