@@ -47,7 +47,7 @@
     ],
     [
       #figure(
-        caption: "Free algorithm",
+        caption: "Free algorithm - Descriptor recovery",
         image("../img/free/free-descriptor_recovered.drawio.svg"),
       )
     ],
@@ -71,7 +71,7 @@
     ],
     [
       #figure(
-        caption: "Free algorithm",
+        caption: "Free algorithm - Anchor copy",
         image("../img/free/free-Anchor_recovered.drawio.svg"),
       )
     ],
@@ -97,7 +97,7 @@
     ],
     [
       #figure(
-        caption: "Free algorithm",
+        caption: "Free algorithm - current block index retrieval",
         image("../img/free/free-Avail_mod.drawio.svg"),
       )
     ],
@@ -126,7 +126,7 @@
     ],
     [
       #figure(
-        caption: "Free algorithm",
+        caption: "Free algorithm - Current state retrieval",
         image("../img/free/free-State_check.drawio.svg"),
       )
     ],
@@ -156,7 +156,7 @@
     ],
     [
       #figure(
-        caption: "Free algorithm",
+        caption: "Free algorithm - Count incrementation",
         image("../img/free/free-Increment_avail.drawio.svg"),
       )
     ],
@@ -188,7 +188,7 @@
     ],
     [
       #figure(
-        caption: "Free algorithm",
+        caption: "Free algorithm - Anchor overwrite",
         image("../img/free/free-CAS_Anchor.drawio.svg"),
       )
     ],
@@ -224,7 +224,7 @@
     ],
     [
       #figure(
-        caption: "Free algorithm",
+        caption: "Free algorithm - Empty Superblock check",
         image("../img/free/free-CAS_Empty.drawio.svg"),
       )
     ],
@@ -257,14 +257,14 @@
     ],
     [
       #figure(
-        caption: "Free algorithm",
+        caption: "Free algorithm - Full Superblock check",
         image("../img/free/free-CAS_Full.drawio.svg"),
       )
     ],
   )
 ]
 
-#slide("Allocating descriptors (1/y)")[
+#slide("Retrieving descriptors (1/y)")[
   #grid(
     columns: (50%, 50%),
     inset: 1em,
@@ -272,11 +272,16 @@
       if (x == 0) {
         center + horizon
       } else {
-        left + horizon
+        left + top
       }
     },
     [
-
+      #v(50%)
+      #figure(
+        caption: "Retrieving descriptors - DescAvail",
+        image("../img/free/free-DescAvail.drawio.svg"),
+      )
+      #v(50%)
     ],
     [
       - A pointer called *DescAvail* keeps the start of a *LIFO linked list*
@@ -285,7 +290,7 @@
   )
 ]
 
-#slide("Allocating descriptors (1/y)")[
+#slide("Retrieving descriptors (1/y)")[
   #grid(
     columns: (50%, 50%),
     inset: 1em,
@@ -293,45 +298,26 @@
       if (x == 0) {
         center + horizon
       } else {
-        left + horizon
+        left + top
       }
     },
     [
-
-    ],
-    [
-      - A pointer called *DescAvail* keeps the start of a *LIFO linked list*
-        - The list contains superblocks descriptor that may have a superblock associated to it or not
-      + The current value of *DescAvail* is copied
-    ],
-  )
-]
-
-#slide("Allocating descriptors (1/y)")[
-  #grid(
-    columns: (50%, 50%),
-    inset: 1em,
-    align: (x, y) => {
-      if (x == 0) {
-        center + horizon
-      } else {
-        left + horizon
-      }
-    },
-    [
-
+      #v(50%)
+      #figure(
+        caption: "Retrieving descriptors - Descriptor retrieval",
+        image("../img/free/free-CopyDesc.drawio.svg"),
+      )
+      #v(50%)
     ],
     [
       - A pointer called *DescAvail* keeps the start of a *LIFO linked list*
         - The list contains superblocks descriptor that may have a superblock associated to it or not
       + The current value of *DescAvail* is copied
-      + *CAS*: modify the *DescAvail* with the next descriptor (accessible by the next pointer)
-        - *hazard pointers* are used to prevent ABA
     ],
   )
 ]
 
-#slide("Allocating descriptors (1/y)")[
+#slide("Retrieving descriptors (1/y)")[
   #grid(
     columns: (50%, 50%),
     inset: 1em,
@@ -339,11 +325,16 @@
       if (x == 0) {
         center + horizon
       } else {
-        left + horizon
+        left + top
       }
     },
     [
-
+      #v(50%)
+      #figure(
+        caption: "Retrieving descriptors - DescAvail overwrite",
+        image("../img/free/free-CAS_DescAvail.drawio.svg"),
+      )
+      #v(50%)
     ],
     [
       - A pointer called *DescAvail* keeps the start of a *LIFO linked list*
@@ -351,6 +342,37 @@
       + The current value of *DescAvail* is copied
       + *CAS*: modify the *DescAvail* with the next descriptor (accessible by the next pointer)
         - *hazard pointers* are used to prevent ABA
+        - If the list was empty a new Descriptor is allocated instead. Change still operated via *CAS*
+    ],
+  )
+]
+
+#slide("Retrieving descriptors (1/y)")[
+  #grid(
+    columns: (50%, 50%),
+    inset: 1em,
+    align: (x, y) => {
+      if (x == 0) {
+        center + horizon
+      } else {
+        left + top
+      }
+    },
+    [
+      #v(50%)
+      #figure(
+        caption: "Retrieving descriptors - Final result of Desc retrieval",
+        image("../img/free/free-DescAvail_Final.drawio.svg"),
+      )
+      #v(50%)
+    ],
+    [
+      - A pointer called *DescAvail* keeps the start of a *LIFO linked list*
+        - The list contains superblocks descriptor that may have a superblock associated to it or not
+      + The current value of *DescAvail* is copied
+      + *CAS*: modify the *DescAvail* with the next descriptor (accessible by the next pointer)
+        - *hazard pointers* are used to prevent ABA
+        - If the list was empty a new Descriptor is allocated instead. Change still operated via *CAS*
       + *Deallocating* follow the reverse procedure
     ],
   )
@@ -359,10 +381,9 @@
 #slide("A small note regarding freed superblocks (1/z)")[
   #grid(
     columns: (50%, 50%),
-    inset: 1em,
     align: (x, y) => {
       if (x == 0) {
-        left + horizon
+        left + top
       } else {
         center + horizon
       }
@@ -374,6 +395,12 @@
         - ...Therefore, the partial list may be populated with descriptors of *Empty* superblocks
     ],
     [
+      #v(50%)
+      #figure(
+        caption: "Partial list problem - Example",
+        image("../img/free/free-free_empty.drawio.svg"),
+      )
+      #v(50%)
     ],
   )
 ]
@@ -381,10 +408,9 @@
 #slide("A small note regarding freed superblocks (2/z)")[
   #grid(
     columns: (50%, 50%),
-    inset: 1em,
     align: (x, y) => {
       if (x == 0) {
-        left + horizon
+        left + top
       } else {
         center + horizon
       }
@@ -399,6 +425,12 @@
         - This is to allow the system to be entirely lock-free
     ],
     [
+      #v(50%)
+      #figure(
+        caption: "Partial list problem - Solution",
+        image("../img/free/free-free_empty_cleaned.drawio.svg", width: 70.5%),
+      )
+      #v(50%)
     ],
   )
 ]
