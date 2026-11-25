@@ -257,7 +257,87 @@
   )
 ]
 
-#slide("2004 Available Solutions")[
+#slide("2004 Available Solutions (1/3)")[
+  #grid(
+    columns: (50%, 50%),
+    align: (x, y) => {
+      if x == 0 {
+        left + top
+      } else {
+        center + horizon
+      }
+    },
+    [
+      - The standard implementation of malloc is, \ in many systems, *not thread-safe*
+        - A _beautiful_ *lock* is acquired upon malloc \
+          invocation
+    ],
+    [
+      #image("../img/mdi--lock.svg", width: 20%)
+    ],
+  )
+
+  #align(center)[*Two alternative were available*]
+  #grid(
+    columns: (50%, 50%),
+    align: left,
+    [
+      #align(center)[*Ptmalloc*]
+      - Created by Wolfram Gloger, based on an allocator created by Doug Lea
+      - A better solution than the standard allocator, good results in most of the cases
+        - Specifically, the producer-consumer pattern is problematic
+        - Memory always returned to the owner (*Blowup problem*)
+    ],
+    [
+
+    ],
+  )
+
+  #align(center)[Despite the differences, a common problem: *both still use locks!*]
+]
+
+#slide("2004 Available Solutions (2/3)")[
+  #grid(
+    columns: (50%, 50%),
+    align: (x, y) => {
+      if x == 0 {
+        left + top
+      } else {
+        center + horizon
+      }
+    },
+    [
+      - The standard implementation of malloc is, \ in many systems, *not thread-safe*
+        - A _beautiful_ *lock* is acquired upon malloc \
+          invocation
+    ],
+    [
+      #image("../img/mdi--lock.svg", width: 20%)
+    ],
+  )
+
+  #align(center)[*Two alternative were available*]
+  #grid(
+    columns: (50%, 50%),
+    align: left,
+    [
+      #align(center)[*Ptmalloc*]
+      - Created by Wolfram Gloger, based on an allocator created by Doug Lea
+      - A better solution than the standard allocator, good results in most of the cases
+        - Specifically, the producer-consumer pattern is problematic
+        - Memory always returned to the owner (*Blowup problem*)
+    ],
+    [
+      #align(center)[*Hoard*]
+      - Created by Emery D. Berger, Kathryn S. McKinley, Robert D. Blumofe, Paul R. Wilson
+      - Tries to solve the *Blowup problem* while achieving better results
+      - Still some scalability issues on producer-consumer pattern
+    ],
+  )
+
+]
+
+#slide("2004 Available Solutions (3/3)")[
   #grid(
     columns: (50%, 50%),
     align: (x, y) => {
@@ -316,7 +396,6 @@
           - but still allowing to be used concurrently...
           - ...without *deadlocks* and *livelocks*
 
-        - This would allow the algorithm to also be used with *signals*
 
         - Only widely available instructions should be used
           - like *CAS* or *LL/SC* (the _first_ can be implemented with the _second_)
@@ -507,7 +586,7 @@
           - ...But different superblocks may have blocks of a different size
         - Superblocks are assigned to different *size classes*, based on their *block size*
         - Each size class groups its superblocks into groups called *processor heaps*
-          - Specifically, as as the number of processors
+          - Specifically, as many as the number of processors
       ],
       [
         #v(50%)

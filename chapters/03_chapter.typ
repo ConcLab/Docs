@@ -389,7 +389,7 @@
       }
     },
     [
-      - If a superblock is *Empty* after a block is freed, the *CAS* to remove it from the *Partial* field of the superblock may fail
+      - If a superblock is *Empty* after a block is freed, the *CAS* to remove it from the *Partial* field of the Processor Heap may fail
         - Maybe when the block was allocated it was in the *Partial* slot of the Processor Heap...
         - ...But later such superblock was moved to the Partial list...
         - ...Therefore, the partial list may be populated with descriptors of *Empty* superblocks
@@ -416,7 +416,7 @@
       }
     },
     [
-      - If a superblock is *Empty* after a block is freed, the *CAS* to remove it from the *Partial* field of the superblock may fail
+      - If a superblock is *Empty* after a block is freed, the *CAS* to remove it from the *Partial* field of the Processor Heap may fail
         - Maybe when the block was allocated it was in the *Partial* slot of the Processor Heap...
         - ...But later such superblock was moved to the Partial list...
         - ...Therefore, the partial list may be populated with descriptors of *Empty* superblocks
