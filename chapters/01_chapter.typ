@@ -51,6 +51,38 @@
   ]
 }
 
+#let superblockTypesImg(display, capt) = {
+  let colsize = 2em
+
+  figure(
+    kind: image,
+    caption: capt,
+    text()[
+      #v(3em)
+      *Superblock*
+      #grid(
+        stroke: 3pt + black,
+        columns: 50%,
+        grid.cell(fill: if display.at(4) == 1 { fillColor } else { none })[
+          #v(colsize)
+        ],
+        grid.cell(fill: if display.at(3) == 1 { fillColor } else { none })[
+          #v(colsize)
+        ],
+        grid.cell(fill: if display.at(2) == 1 { fillColor } else { none })[
+          #v(colsize)
+        ],
+        grid.cell(fill: if display.at(1) == 1 { fillColor } else { none })[
+          #v(colsize)
+        ],
+        grid.cell(fill: if display.at(0) == 1 { fillColor } else { none })[
+          #v(colsize)
+        ],
+      )
+    ],
+  )
+}
+
 #let memAllocSeq(display, capt) = {
   figure(
     kind: image,
@@ -257,7 +289,28 @@
   )
 ]
 
-#slide("2004 Available Solutions (1/3)")[
+#slide("2004 Available Solutions (1/4)")[
+  #grid(
+    columns: (50%, 50%),
+    align: (x, y) => {
+      if x == 0 {
+        left + top
+      } else {
+        center + horizon
+      }
+    },
+    [
+      - The standard implementation of malloc is, \ in many systems, *not thread-safe*
+        - A _beautiful_ *lock* is acquired upon malloc \
+          invocation
+    ],
+    [
+      #image("../img/mdi--lock.svg", width: 20%)
+    ],
+  )
+]
+
+#slide("2004 Available Solutions (2/4)")[
   #grid(
     columns: (50%, 50%),
     align: (x, y) => {
@@ -292,11 +345,9 @@
 
     ],
   )
-
-  #align(center)[Despite the differences, a common problem: *both still use locks!*]
 ]
 
-#slide("2004 Available Solutions (2/3)")[
+#slide("2004 Available Solutions (3/4)")[
   #grid(
     columns: (50%, 50%),
     align: (x, y) => {
@@ -337,7 +388,7 @@
 
 ]
 
-#slide("2004 Available Solutions (3/3)")[
+#slide("2004 Available Solutions (4/4)")[
   #grid(
     columns: (50%, 50%),
     align: (x, y) => {
@@ -675,48 +726,139 @@
 ]
 
 #slide("A Lock-Free Allocator - Structure (7/y)")[
-  #align(center + horizon)[
-    #grid(
-      columns: (50%, 50%),
-      inset: 0.2em,
-      align: (x, y) => {
-        if (x == 0) {
-          left + top
-        } else {
-          center + horizon
-        }
-      },
-      [
-        - As mentioned, a *superblock* may be:
-          - *Full* - all blocks are allocated;
-          - *Empty* - all blocks are free;
-          - *Active* - not Full and the last superblock used by a malloc call on that Processor Heap;
-          - *Partial* - not Full and *not* the last superblock used by a malloc call on that Processor Heap;
-        - The *Processor Heap* keeps the reference of one *Active* superblock that became *Partial*
-          - All of the other are kept in a *M&S FIFO* queue located in the *Size Class*
-      ],
-      [
-        #hint(
-          [
-            *Note*
-            #align(left)[
-              A superblock become Partial when:
-              - *Thread 1* enters and books a block
-              - *Thread 2* enters and tries to book a block but does not succeed
-              - *Thread 2* will do the booking on another superblock and set this one as *Active*
-              - *Thread 1* notices that *Thread 2* allocated from another superblock, so the superblock of *Thread 2* should be *Active*
-              - *Thread 1* sets its superblock as *Partial*
-            ]
-
-          ],
-          txtSize: 1em,
-        )
-      ],
-    )
-  ]
+  #grid(
+    columns: (50%, 50%),
+    inset: 0.2em,
+    align: (x, y) => {
+      if (x == 0) {
+        left + top
+      } else {
+        center + horizon
+      }
+    },
+    [
+      - As mentioned, a *superblock* may be:
+        - *Full* - all blocks are allocated;
+    ],
+    [
+      #superblockTypesImg((1, 1, 1, 1, 1), "Superblock - State Full")
+    ],
+  )
 ]
 
 #slide("A Lock-Free Allocator - Structure (8/y)")[
+  #grid(
+    columns: (50%, 50%),
+    inset: 0.2em,
+    align: (x, y) => {
+      if (x == 0) {
+        left + top
+      } else {
+        center + horizon
+      }
+    },
+    [
+      - As mentioned, a *superblock* may be:
+        - *Full* - all blocks are allocated;
+        - *Empty* - all blocks are free;
+    ],
+    [
+      #superblockTypesImg((0, 0, 0, 0, 0), "Superblock - State Empty")
+    ],
+  )
+]
+
+#slide("A Lock-Free Allocator - Structure (9/y)")[
+  #grid(
+    columns: (50%, 50%),
+    inset: 0.2em,
+    align: (x, y) => {
+      if (x == 0) {
+        left + top
+      } else {
+        center + horizon
+      }
+    },
+    [
+      - As mentioned, a *superblock* may be:
+        - *Full* - all blocks are allocated;
+        - *Empty* - all blocks are free;
+        - *Active* - not Full and the last superblock used by a malloc call on that Processor Heap;
+    ],
+    [
+      #superblockTypesImg((1, 1, 1, 1, 0), "Superblock - State Active")
+    ],
+  )
+
+]
+
+#slide("A Lock-Free Allocator - Structure (10/y)")[
+  #grid(
+    columns: (50%, 50%),
+    inset: 0.2em,
+    align: (x, y) => {
+      if (x == 0) {
+        left + top
+      } else {
+        center + horizon
+      }
+    },
+    [
+      - As mentioned, a *superblock* may be:
+        - *Full* - all blocks are allocated;
+        - *Empty* - all blocks are free;
+        - *Active* - not Full and the last superblock used by a malloc call on that Processor Heap;
+        - *Partial* - not Full and *not* the last superblock used by a malloc call on that Processor Heap;
+    ],
+    [
+      #superblockTypesImg((1, 1, 0, 1, 0), "Superblock - State Partial")
+    ],
+  )
+
+]
+
+#slide("A Lock-Free Allocator - Structure (11/y)")[
+  #grid(
+    columns: (50%, 50%),
+    inset: 0.2em,
+    align: (x, y) => {
+      if (x == 0) {
+        left + top
+      } else {
+        center + horizon
+      }
+    },
+    [
+      - As mentioned, a *superblock* may be:
+        - *Full* - all blocks are allocated;
+        - *Empty* - all blocks are free;
+        - *Active* - not Full and the last superblock used by a malloc call on that Processor Heap;
+        - *Partial* - not Full and *not* the last superblock used by a malloc call on that Processor Heap;
+      - The *Processor Heap* keeps the reference of one *Active* superblock that became *Partial*
+        - All of the other are kept in a *M&S FIFO* queue located in the *Size Class*
+    ],
+    [
+      #v(2em)
+      #hint(
+        [
+          *Note*
+          #align(left)[
+            A superblock become Partial when:
+            - *Thread 1* enters and books a block
+            - *Thread 2* enters and tries to book a block but does not succeed
+            - *Thread 2* will do the booking on another superblock and set this one as *Active*
+            - *Thread 1* notices that *Thread 2* allocated from another superblock, so the superblock of *Thread 2* should be *Active*
+            - *Thread 1* sets its superblock as *Partial*
+          ]
+
+        ],
+        txtSize: 1em,
+      )
+    ],
+  )
+]
+
+#slide("A Lock-Free Allocator - Structure (12/y)")[
   #align(center + horizon)[
     #grid(
       columns: (50%, 50%),
@@ -746,7 +888,7 @@
   ]
 ]
 
-#slide("A Lock-Free Allocator - Structure (9/y)")[
+#slide("A Lock-Free Allocator - Structure (13/y)")[
   #align(center + horizon)[
     #grid(
       columns: (40%, 60%),
@@ -787,7 +929,7 @@
   ]
 ]
 
-#slide("A Lock-Free Allocator - Structure (10/y)")[
+#slide("A Lock-Free Allocator - Structure (14/y)")[
   #align(center + horizon)[
     #grid(
       columns: (40%, 60%),
