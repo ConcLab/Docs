@@ -42,19 +42,19 @@
     ],
   )
 
-  place(dx: 48%, dy: -62%)[
+  place(dx: 48%, dy: -55%)[
     #text(size: 2em)[$arrow.b.filled$]
   ]
 
-  place(dx: 48%, dy: -48%)[
+  place(dx: 48%, dy: -44%)[
     #text(size: 2em)[$arrow.t.filled$]
   ]
 }
 
-#let memAllocSeq(display) = {
+#let memAllocSeq(display, capt) = {
   figure(
     kind: image,
-    caption: "Heap allocation",
+    caption: capt,
     text()[
       #v(3em)
       *The Heap*
@@ -138,7 +138,9 @@
         - Not directly usable in every programming language
     ],
     [
+      #v(50%)
       #memFig()
+      #v(50%)
     ],
   )
 ]
@@ -160,7 +162,9 @@
 
     ],
     [
-      #memAllocSeq((0, 0, 0))
+      #v(50%)
+      #memAllocSeq((0, 0, 0), "Heap allocation - Empty Heap")
+      #v(50%)
     ],
   )
 ]
@@ -184,7 +188,9 @@
         - Then, the program can navigate for 16 bytes over that base address
     ],
     [
-      #memAllocSeq((1, 0, 0))
+      #v(50%)
+      #memAllocSeq((1, 0, 0), "Heap allocation - Thread 1 allocate the first block")
+      #v(50%)
     ],
   )
 ]
@@ -211,7 +217,9 @@
         - Thread use the heap sequentially
     ],
     [
-      #memAllocSeq((1, 1, 0))
+      #v(50%)
+      #memAllocSeq((1, 1, 0), "Heap allocation - Thread 1 allocate the second block")
+      #v(50%)
     ],
   )
 ]
@@ -242,17 +250,99 @@
         - A *special adaptation of malloc* is needed
     ],
     [
-      #memAllocSeq((1, 1, 1))
+      #v(50%)
+      #memAllocSeq((1, 1, 1), "Heap allocation - Threads conflict into allocating a block")
+      #v(50%)
     ],
   )
 ]
 
-#slide("2004 Available Solutions")[
+#slide("2004 Available Solutions (1/3)")[
   #grid(
     columns: (50%, 50%),
     align: (x, y) => {
       if x == 0 {
-        left + horizon
+        left + top
+      } else {
+        center + horizon
+      }
+    },
+    [
+      - The standard implementation of malloc is, \ in many systems, *not thread-safe*
+        - A _beautiful_ *lock* is acquired upon malloc \
+          invocation
+    ],
+    [
+      #image("../img/mdi--lock.svg", width: 20%)
+    ],
+  )
+
+  #align(center)[*Two alternative were available*]
+  #grid(
+    columns: (50%, 50%),
+    align: left,
+    [
+      #align(center)[*Ptmalloc*]
+      - Created by Wolfram Gloger, based on an allocator created by Doug Lea
+      - A better solution than the standard allocator, good results in most of the cases
+        - Specifically, the producer-consumer pattern is problematic
+        - Memory always returned to the owner (*Blowup problem*)
+    ],
+    [
+
+    ],
+  )
+
+  #align(center)[Despite the differences, a common problem: *both still use locks!*]
+]
+
+#slide("2004 Available Solutions (2/3)")[
+  #grid(
+    columns: (50%, 50%),
+    align: (x, y) => {
+      if x == 0 {
+        left + top
+      } else {
+        center + horizon
+      }
+    },
+    [
+      - The standard implementation of malloc is, \ in many systems, *not thread-safe*
+        - A _beautiful_ *lock* is acquired upon malloc \
+          invocation
+    ],
+    [
+      #image("../img/mdi--lock.svg", width: 20%)
+    ],
+  )
+
+  #align(center)[*Two alternative were available*]
+  #grid(
+    columns: (50%, 50%),
+    align: left,
+    [
+      #align(center)[*Ptmalloc*]
+      - Created by Wolfram Gloger, based on an allocator created by Doug Lea
+      - A better solution than the standard allocator, good results in most of the cases
+        - Specifically, the producer-consumer pattern is problematic
+        - Memory always returned to the owner (*Blowup problem*)
+    ],
+    [
+      #align(center)[*Hoard*]
+      - Created by Emery D. Berger, Kathryn S. McKinley, Robert D. Blumofe, Paul R. Wilson
+      - Tries to solve the *Blowup problem* while achieving better results
+      - Still some scalability issues on producer-consumer pattern
+    ],
+  )
+
+]
+
+#slide("2004 Available Solutions (3/3)")[
+  #grid(
+    columns: (50%, 50%),
+    align: (x, y) => {
+      if x == 0 {
+        left + top
       } else {
         center + horizon
       }
@@ -306,7 +396,6 @@
           - but still allowing to be used concurrently...
           - ...without *deadlocks* and *livelocks*
 
-        - This would allow the algorithm to also be used with *signals*
 
         - Only widely available instructions should be used
           - like *CAS* or *LL/SC* (the _first_ can be implemented with the _second_)
@@ -400,10 +489,12 @@
         - The Heap is divided into *superblocks*
       ],
       [
+        #v(50%)
         #figure(
-          caption: "Allocator structures",
+          caption: "Allocator structures - Superblocks",
           image("../img/fig1.svg", width: 60%),
         )
+        #v(50%)
       ],
     )
   ]
@@ -430,10 +521,12 @@
           - ...But different superblocks may have blocks of a different size
       ],
       [
+        #v(50%)
         #figure(
-          caption: "Allocator structures",
+          caption: "Allocator structures - Blocks",
           image("../img/fig2.svg", width: 80%),
         )
+        #v(50%)
       ],
     )
   ]
@@ -461,10 +554,12 @@
         - Superblocks are assigned to different *size classes*, based on their *block size*
       ],
       [
+        #v(50%)
         #figure(
-          caption: "Allocator structures",
+          caption: "Allocator structures - Size classes",
           image("../img/fig3.svg", width: 95%),
         )
+        #v(50%)
       ],
     )
   ]
@@ -491,11 +586,12 @@
           - ...But different superblocks may have blocks of a different size
         - Superblocks are assigned to different *size classes*, based on their *block size*
         - Each size class groups its superblocks into groups called *processor heaps*
-          - Specifically, as as the number of processors
+          - Specifically, as many as the number of processors
       ],
       [
+        #v(50%)
         #figure(
-          caption: "Allocator structures",
+          caption: "Allocator structures - Processor Heaps",
           kind: image,
 
           text()[
@@ -512,6 +608,7 @@
             )
           ],
         )
+        #v(50%)
       ],
     )
   ]
@@ -544,8 +641,9 @@
           - 0 or 1 *Partial superblocks*
       ],
       [
+        #v(50%)
         #figure(
-          caption: "Allocator structures",
+          caption: "Allocator structures - Processor Heaps members",
           kind: image,
 
           align(left)[
@@ -570,6 +668,7 @@
             )
           ],
         )
+        #v(50%)
       ],
     )
   ]
@@ -579,6 +678,7 @@
   #align(center + horizon)[
     #grid(
       columns: (50%, 50%),
+      inset: 0.2em,
       align: (x, y) => {
         if (x == 0) {
           left + top
@@ -592,7 +692,7 @@
           - *Empty* - all blocks are free;
           - *Active* - not Full and the last superblock used by a malloc call on that Processor Heap;
           - *Partial* - not Full and *not* the last superblock used by a malloc call on that Processor Heap;
-        - The *Processor Heap* keeps the reference of the last *Active* superblock that became *Partial*
+        - The *Processor Heap* keeps the reference of one *Active* superblock that became *Partial*
           - All of the other are kept in a *M&S FIFO* queue located in the *Size Class*
       ],
       [
@@ -630,16 +730,17 @@
       [
         *Before continuing, some missing details*:
         - The *Size Class* representation is as expected
-        #v(90%)
       ],
       [
+        #v(50%)
         #figure(
           kind: image,
-          caption: "Allocator structures (details)",
+          caption: "Size Class details",
           [
             #image("../img/sizeclass.svg")
           ],
         )
+        #v(50%)
       ],
     )
   ]
@@ -662,12 +763,12 @@
         - For the *Processor Heap*, the *Active* superblock has two data:
           - The pointer to the superblock *descriptor*
           - A *credits* section, useful for booking. It is always set in such a way that if *n* is the memorized number, *n+1* blocks are available
-        #v(90%)
       ],
       [
+        #v(50%)
         #figure(
           kind: image,
-          caption: "Allocator structures (details)",
+          caption: "Size class and Processor Heap details",
           [
             #grid(
               columns: (50%, 50%),
@@ -678,9 +779,9 @@
                 #image("../img/ProcHeap.svg", width: 110%)
               ],
             )
-
           ],
         )
+        #v(50%)
       ],
     )
   ]
@@ -709,12 +810,12 @@
           - The state of the superblock
           - A tag (prevents ABA problem)
         - The *Descriptor* itself contains the block size instead
-        #v(90%)
       ],
       [
+        #v(50%)
         #figure(
           kind: image,
-          caption: "Allocator structures (details)",
+          caption: [Size class, Processor Heap and Superblock Descriptor \ details],
           [
             #grid(
               columns: (50%, 50%),
@@ -729,9 +830,9 @@
                 #image("../img/Descriptor.svg")
               ],
             )
-
           ],
         )
+        #v(50%)
       ],
     )
   ]

@@ -5,3 +5,4 @@
 
 #include "chapters/01_chapter.typ"
 #include "chapters/02_chapter.typ"
+#include "chapters/03_chapter.typ"
