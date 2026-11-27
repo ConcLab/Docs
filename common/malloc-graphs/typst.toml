@@ -1,0 +1,7 @@
+[package]
+  name = "malloc-graph"
+  version = "0.0.1"
+  entrypoint = "malloc-graph.typ"
+  authors = ["LorenzoCaraffini"]
+  license = "GPL3"
+  description = "State visualization for the lock-free memory allocation algorithm. Built for a specific presentation and thus using hacky solutions, unfit for external use"

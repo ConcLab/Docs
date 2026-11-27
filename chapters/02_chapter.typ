@@ -1,705 +1,1652 @@
 #import "../common/commonSlide.typ": hint, slide
+#import "../common/malloc-graphs/malloc-graph.typ": draw-state
 
-#slide("A Lock-Free Allocator - Execution (1/q)")[
+
+#slide([The Allocation Algorithm])[
+  #set align(center + horizon)
+  #set text(size: 1.7em)
+  == The Allocation Algorithm
+]
+
+#slide([The Allocation Algorithm])[
+  #set align(center)
   #grid(
     columns: (50%, 50%),
-    align: (x, y) => {
-      if (x == 0) {
-        center + horizon
-      } else {
-        left + horizon
+    [
+      #set align(left)
+      #set text(size: 1.4em)
+      - Find an appropriate heap based on the requested size
+      - If one is not found, let the OS handle the allocation and return
+      - If one _is_ found, try allocating a block from
+        + The active superblock
+        + A partial superblock
+        + A new superblock
+        in this order. If all 3 fail, try again.
+    ],
+    [
+      #set text(size: 1.3em)
+      ```C
+      void* malloc(sz) {
+        heap = find heap(sz);
+        if (!heap) // Large block
+          Allocate block from OS
+          and return its address.
+        while(1) {
+          addr = MallocFromActive(heap);
+          if (addr) return addr;
+            addr = MallocFromPartial(heap);
+          if (addr) return addr;
+            addr = MallocFromNewSB(heap);
+          if (addr) return addr;
+        }
       }
-    },
-    [
-      #image("../img/mdi--format-list-bulleted-square.svg", width: 30%)
-    ],
-    [
-      - When malloc is invoked, based on the size, a Processor Heap with Superblocks of an appropriate size class is searched:
-        - The id of the thread is used to discriminate through the various Processor Heaps of the decided size class
-      - The malloc function has three prioritized modality to allocate the block:
-        - From an Active superblock
-        - From a partial superblock
-        - From a new superblock
-      - Anything can change during execution
-        - A loop ensures that at least one of the methods will return a usable address
-    ],
+      ```
+    ]
   )
 ]
 
-#slide("A Lock-Free Allocator - Execution (2/q)")[
-  #grid(
-    columns: (50%, 50%),
-    align: (x, y) => {
-      if (x == 0) {
-        center + horizon
-      } else {
-        left + horizon
-      }
-    },
-    [
-      #image("../img/mdi--format-list-bulleted-square.svg", width: 30%)
-    ],
-    [
-      - When malloc is invoked, based on the size, a Processor Heap with Superblocks of an appropriate size class is searched:
-        - The id of the thread is used to discriminate through the various Processor Heaps of the decided size class
-      - The malloc function has three prioritized modality to allocate the block:
-        - From an *Active* superblock
-        - From a *Partial* superblock
-        - From a *New* superblock
-      - Anything can change during execution
-        - A loop ensures that at least one of the methods will return a usable address
-      - Non-allocated blocs are linked together, this makes detecting the next free block (*first_available_block* on the *Anchor*) easy and prevents allocating the same block to multiple threads
-    ],
-  )
+#slide([Allocating from the Active Superblock])[
+  #set align(center + horizon)
+  #set text(size: 1.7em)
+  == Allocating from the Active Superblock
 ]
 
-#slide("Allocating from an Active superblock (1/z)")[
+#slide([Allocating from the Active Superblock])[
   #grid(
-    columns: (50%, 50%),
-    align: (x, y) => {
-      if (x == 0) {
-        center + horizon
-      } else {
-        left + horizon
-      }
-    },
+    columns: (100%),
+    rows: (30%, 70%),
     [
-
-    ],
-    [
+      #set align(left)
+      #text(size: 1.7em, weight: "bold")[STEP 1: Reserve a block]
+      #set text(size: 1.4em)
+      // TEXT
       - First, the current *Active* section of the Processor Heap is copied
         - If *null*, no Active superblock is present, abort
+    ],
+    [
+      #set align(center + horizon)
+      // IMAGES
+      #scale(300%)[
+        // DRAW-STATE
+        #draw-state(
+          credits: 5,
+          active-target: 0,
+          active-hl: (),
+          entries: ()
+        )
+      ]
+    ]
+  )
+]
+
+#slide([Allocating from the Active Superblock])[
+  #set align(center)
+  #grid(
+    rows: (30%, 40%, 300%),
+    [
+      #set align(left)
+      #set text(size: 1.4em)
+      #columns(2)[
         - If *credits > 0*, book a block (reduce credits by one)
+        
         - If *credits == 0*, the last block can be booked, set the Active to *null*
-    ],
-  )
-]
-
-#slide("Allocating from an Active superblock (2/z)")[
-  #grid(
-    columns: (50%, 50%),
-    align: (x, y) => {
-      if (x == 0) {
-        center + horizon
-      } else {
-        left + horizon
-      }
-    },
-    [
-
+      ]
     ],
     [
-      + First, the current *Active* section of the Processor Heap is copied
-        - If *null*, no Active superblock is present, abort
-        - If *credits > 0*, book a block (reduce credits by one)
-        - If *credits == 0*, the last block can be booked, set the Active to *null*
-      + *CAS*: try to write the changes to the *Active*
-        - If *not successful*, repeat point 1
-    ],
-  )
-]
+      #set align(center + horizon)
+      #grid(
+        columns: (50%, 50%),
+        [
+          #scale(200%)[
+            #draw-state(
+              credits: 3,
+              active-target: 0,
+              active-hl: (),
+              entries: ()
+            )
+          ]
 
-#slide("Allocating from an Active superblock (3/z)")[
-  #grid(
-    columns: (50%, 50%),
-    align: (x, y) => {
-      if (x == 0) {
-        center + horizon
-      } else {
-        left + horizon
-      }
-    },
-    [
-
-    ],
-    [
-      + First, the current *Active* section of the Processor Heap is copied
-        - If *null*, no Active superblock is present, abort
-        - If *credits > 0*, book a block (reduce credits by one)
-        - If *credits == 0*, the last block can be booked, set the Active to *null*
-      + *CAS*: try to write the changes to the *Active*
-        - If *not successful*, repeat point 1
-      + Secondly, copy the *Anchor*
-    ],
-  )
-]
-
-#slide("Allocating from an Active superblock (4/z)")[
-  #grid(
-    columns: (50%, 50%),
-    align: (x, y) => {
-      if (x == 0) {
-        center + horizon
-      } else {
-        left + horizon
-      }
-    },
-    [
-
+          \
+          #scale(200%)[
+            #draw-state(
+              credits: 2,
+              active-target: 0,
+              active-hl: (0,),
+              entries: ()
+            )
+          ]
+        ],
+        [
+          #scale(200%)[
+            #draw-state(
+              credits: 0,
+              active-target: 0,
+              active-hl: (),
+              entries: ()
+            )
+          ]
+          \
+          #set text(1.5em)
+           $arrow.t$\
+          NULL
+        ]
+      )
     ],
     [
-      + First, the current *Active* section of the Processor Heap is copied
-        - If *null*, no Active superblock is present, abort
-        - If *credits > 0*, book a block (reduce credits by one)
-        - If *credits == 0*, the last block can be booked, set the Active to *null*
-      + *CAS*: try to write the changes to the *Active*
-        - If *not successful*, repeat point 1
-      + Secondly, copy the *Anchor*
-        - Recover the first available block from *first_available_block*
-    ],
-  )
-]
-
-#slide("Allocating from an Active superblock (5/z)")[
-  #grid(
-    columns: (50%, 50%),
-    align: (x, y) => {
-      if (x == 0) {
-        center + horizon
-      } else {
-        left + horizon
-      }
-    },
-    [
-
-    ],
-    [
-      + First, the current *Active* section of the Processor Heap is copied
-        - If *null*, no Active superblock is present, abort
-        - If *credits > 0*, book a block (reduce credits by one)
-        - If *credits == 0*, the last block can be booked, set the Active to *null*
-      + *CAS*: try to write the changes to the *Active*
-        - If *not successful*, repeat point 1
-      + Secondly, copy the *Anchor*
-        - Recover the first available block from *first_available_block*
-        - Update the *first_available_block* with the value inside the taken block, save the current value
-    ],
-  )
-]
-
-#slide("Allocating from an Active superblock (6/z)")[
-  #grid(
-    columns: (50%, 50%),
-    align: (x, y) => {
-      if (x == 0) {
-        center + horizon
-      } else {
-        left + horizon
-      }
-    },
-    [
-
-    ],
-    [
-      + First, the current *Active* section of the Processor Heap is copied
-        - If *null*, no Active superblock is present, abort
-        - If *credits > 0*, book a block (reduce credits by one)
-        - If *credits == 0*, the last block can be booked, set the Active to *null*
-      + *CAS*: try to write the changes to the *Active*
-        - If *not successful*, repeat point 1
-      + Secondly, copy the *Anchor*
-        - Recover the first available block from *first_available_block*
-        - Update the *first_available_block* with the value inside the taken block, save the current value
-        - Increment the *tag*
-    ],
-  )
-]
-
-#slide("Allocating from an Active superblock (7/z)")[
-  #grid(
-    columns: (50%, 50%),
-    align: (x, y) => {
-      if (x == 0) {
-        center + horizon
-      } else {
-        left + horizon
-      }
-    },
-    [
-
-    ],
-    [
-      + First, the current *Active* section of the Processor Heap is copied
-        - If *null*, no Active superblock is present, abort
-        - If *credits > 0*, book a block (reduce credits by one)
-        - If *credits == 0*, the last block can be booked, set the Active to *null*
-      + *CAS*: try to write the changes to the *Active*
-        - If *not successful*, repeat point 1
-      + Secondly, copy the *Anchor*
-        - Recover the first available block from *first_available_block*
-        - Update the *first_available_block* with the value inside the taken block, save the current value
-        - Increment the *tag*
-        - Try to reserve more *credits* for future bookings
-          - Only if the current value was 0
-          - *number_free_blocks = 0*? Set the state to FULL
-    ],
-  )
-]
-
-#slide("Allocating from an Active superblock (8/z)")[
-  #grid(
-    columns: (50%, 50%),
-    align: (x, y) => {
-      if (x == 0) {
-        center + horizon
-      } else {
-        left + horizon
-      }
-    },
-    [
-
-    ],
-    [
-      #set enum(start: 4)
-      + *CAS*: write the new *Anchor*
-        - If *not-successful*, retry the point 3
-        - Eventually it *must* succeed since booking was succeeded
-    ],
-  )
-]
-
-#slide("Allocating from an Active superblock (9/z)")[
-  #grid(
-    columns: (50%, 50%),
-    align: (x, y) => {
-      if (x == 0) {
-        center + horizon
-      } else {
-        left + horizon
-      }
-    },
-    [
-
-    ],
-    [
-      #set enum(start: 4)
-      + *CAS*: write the new *Anchor*
-        - If *not-successful*, retry the point 3
-        - Eventually it *must* succeed since booking was succeeded
-      + *Problem*: if credits were 0 and a thread tried to allocate a block, another superblock may have set *Active* to *null*:
-        - *CAS*: try to set *Active* to the current superblock
-          - If *not successful*, copy the *Anchor*, reset the *number_free_blocks* and set the state to *Partial*, then *CAS*
-    ],
-  )
-]
-
-#slide("Allocating from an Active superblock (10/z)")[
-  #grid(
-    columns: (50%, 50%),
-    align: (x, y) => {
-      if (x == 0) {
-        center + horizon
-      } else {
-        left + horizon
-      }
-    },
-    [
-
-    ],
-    [
-      #set enum(start: 4)
-      + *CAS*: write the new *Anchor*
-        - If *not-successful*, retry the point 3
-        - Eventually it *must* succeed since booking was succeeded
-      + *Problem*: if credits were 0 and a thread tried to allocate a block, another superblock may have set *Active* to *null*:
-        - *CAS*: try to set *Active* to the current superblock
-          - If *not successful*, copy the *Anchor*, reset the *number_free_blocks* and set the state to *Partial*, then *CAS*
-          - *CAS*: Try to put the superblock as *Partial* in the *Processor Heap*. Then put the previously registered Partial superblock in the *Partial list*
-      + Return the address of the allocated block
-    ],
-  )
-]
-
-#slide("Allocating from a Partial superblock (1/l)")[
-  #grid(
-    columns: (50%, 50%),
-    align: (x, y) => {
-      if (x == 0) {
-        left + horizon
-      } else {
-        center + horizon
-      }
-    },
-    [
-      + Get the Partial superblock of the current Processor Heap
-        - If *not found*, abort
-    ],
-    [
-
-    ],
-  )
-]
-
-#slide("Allocating from a Partial superblock (2/l)")[
-  #grid(
-    columns: (50%, 50%),
-    align: (x, y) => {
-      if (x == 0) {
-        left + horizon
-      } else {
-        center + horizon
-      }
-    },
-    [
-      + Get the Partial superblock of the current Processor Heap
-        - If *not found*, abort
-        - If *found*, copy the *Anchor*
-      + Fill the credits for future bookings
-    ],
-    [
-
-    ],
-  )
-]
-
-#slide("Allocating from a Partial superblock (3/l)")[
-  #grid(
-    columns: (50%, 50%),
-    align: (x, y) => {
-      if (x == 0) {
-        left + horizon
-      } else {
-        center + horizon
-      }
-    },
-    [
-      + Get the Partial superblock of the current Processor Heap
-        - If *not found*, abort
-        - If *found*, copy the *Anchor*
-      + Fill the credits for future bookings
-      + Decrease *number_free_blocks* appropriately
-        - Normally, by the number of booked credits...
-        - ...But a block is reserved for the current thread
-      + Verify if it is necessary to set the superblock as Full
-        - When *credits = 0*
-    ],
-    [
-
-    ],
-  )
-]
-
-#slide("Allocating from a Partial superblock (4/l)")[
-  #grid(
-    columns: (50%, 50%),
-    align: (x, y) => {
-      if (x == 0) {
-        left + horizon
-      } else {
-        center + horizon
-      }
-    },
-    [
-      + Get the Partial superblock of the current Processor Heap
-        - If *not found*, abort
-        - If *found*, copy the *Anchor*
-      + Fill the credits for future bookings
-      + Decrease *number_free_blocks* appropriately
-        - Normally, by the number of booked credits...
-        - ...But a block is reserved for the current thread
-      + Verify if it is necessary to set the superblock as Full
-        - When *credits = 0*
-      + *CAS*: try to write the new *Anchor*
-        - If *not successful*, repeat from point 1.2
-    ],
-    [
-
-    ],
-  )
-]
-
-#slide("Allocating from a Partial superblock (5/l)")[
-  #grid(
-    columns: (50%, 50%),
-    align: (x, y) => {
-      if (x == 0) {
-        left + horizon
-      } else {
-        center + horizon
-      }
-    },
-    [
-      + Get the Partial superblock of the current Processor Heap
-        - If *not found*, abort
-        - If *found*, copy the *Anchor*
-      + Fill the credits for future bookings
-      + Decrease *number_free_blocks* appropriately
-        - Normally, by the number of booked credits...
-        - ...But a block is reserved for the current thread
-      + Verify if it is necessary to set the superblock as Full
-        - When *credits = 0*
-      + *CAS*: try to write the new *Anchor*
-        - If *not successful*, repeat from point 1.2
-      + Copy the just written *Anchor*
-    ],
-    [
-
-    ],
-  )
-]
-
-#slide("Allocating from a Partial superblock (6/l)")[
-  #grid(
-    columns: (50%, 50%),
-    align: (x, y) => {
-      if (x == 0) {
-        left + horizon
-      } else {
-        center + horizon
-      }
-    },
-    [
-      + Get the Partial superblock of the current Processor Heap
-        - If *not found*, abort
-        - If *found*, copy the *Anchor*
-      + Fill the credits for future bookings
-      + Decrease *number_free_blocks* appropriately
-        - Normally, by the number of booked credits...
-        - ...But a block is reserved for the current thread
-      + Verify if it is necessary to set the superblock as Full
-        - When *credits = 0*
-      + *CAS*: try to write the new *Anchor*
-        - If *not successful*, repeat from point 1.2
-      + Copy the just written *Anchor*
-        - Update the *first_available_block* with the value inside the taken block, save the current value
-    ],
-    [
-
-    ],
-  )
-]
-
-#slide("Allocating from a Partial superblock (7/l)")[
-  #grid(
-    columns: (50%, 50%),
-    align: (x, y) => {
-      if (x == 0) {
-        left + horizon
-      } else {
-        center + horizon
-      }
-    },
-    [
-      + Get the Partial superblock of the current Processor Heap
-        - If *not found*, abort
-        - If *found*, copy the *Anchor*
-      + Fill the credits for future bookings
-      + Decrease *number_free_blocks* appropriately
-        - Normally, by the number of booked credits...
-        - ...But a block is reserved for the current thread
-      + Verify if it is necessary to set the superblock as Full
-        - When *credits = 0*
-      + *CAS*: try to write the new *Anchor*
-        - If *not successful*, repeat from point 1.2
-      + Copy the just written *Anchor*
-        - Update the *first_available_block* with the value inside the taken block, save the current value
-        - Increment the *tag*
-    ],
-    [
-
-    ],
-  )
-]
-
-#slide("Allocating from a Partial superblock (8/l)")[
-  #grid(
-    columns: (50%, 50%),
-    align: (x, y) => {
-      if (x == 0) {
-        left + horizon
-      } else {
-        center + horizon
-      }
-    },
-    [
-      #set enum(start: 7)
-      + *CAS*: write the new *Anchor*
-        - If *not successful*, repeat from point 6
-
-    ],
-    [
-
-    ],
-  )
-]
-
-#slide("Allocating from a Partial superblock (9/l)")[
-  #grid(
-    columns: (50%, 50%),
-    align: (x, y) => {
-      if (x == 0) {
-        left + horizon
-      } else {
-        center + horizon
-      }
-    },
-    [
-      #set enum(start: 7)
-      + *CAS*: write the new *Anchor*
-        - If *not successful*, repeat from point 6
-      + *Problem*: superblock should be the newly Active superblock:
-      - *CAS*: try to set *Active* to the current superblock
-        - If *not successful*, copy the *Anchor*, reset the *number_free_blocks* and set the state to *Partial*, then *CAS*
-    ],
-    [
-
-    ],
-  )
-]
-
-#slide("Allocating from a Partial superblock (10/l)")[
-  #grid(
-    columns: (50%, 50%),
-    align: (x, y) => {
-      if (x == 0) {
-        left + horizon
-      } else {
-        center + horizon
-      }
-    },
-    [
-      #set enum(start: 7)
-      + *CAS*: write the new *Anchor*
-        - If *not successful*, repeat from point 6
-      + *Problem*: superblock should be the newly Active superblock:
-      - *CAS*: try to set *Active* to the current superblock
-        - If *not successful*, copy the *Anchor*, reset the *number_free_blocks* and set the state to *Partial*, then *CAS*
-      + Return the address of the allocated block
-    ],
-    [
-
-    ],
+      \
+      #set align(left)
+      #set text(size: 1.4em)
+      *CAS*: try to write the changes to the *Active*. If *not successful*, repeat step 1
+    ]
   )
 ]
 
 
-#slide("Allocating from a New superblock (1/v)")[
+#slide([Allocating from the Active Superblock])[
+  #set align(center)
   #grid(
-    columns: (50%, 50%),
-    align: (x, y) => {
-      if (x == 0) {
-        center + horizon
-      } else {
-        left + horizon
-      }
-    },
+    columns: (100%),
+    rows: (30%, 70%),
     [
+      #set align(left)
+      #text(size: 1.7em, weight: "bold")[STEP 2: Pop a block and modify the descriptor]\
+      #set text(size: 1.4em)
+      
+      We first copy the anchor
+    ],
+    [
+      #set align(center + horizon)
+      // IMAGES
+      #scale(170%)[
+        #draw-state(
+          credits: 2,
+          active-target: 0,
+          active-hl: (),
+          entries: (
+            (
+              desc: (
+                label: [Real Anchor],
+                avail: 5,
+                count: 1,
+                state: "A",
+                tag: "112",
+              ),
+              cells: ("A", "D", "A", "6", "A", "3", "7", "1"),
+              hl-desc: (),
+              hl-sb: (),
+            ),
+            (
+              desc: (
+                label: [Old Anchor],
+                avail: 5,
+                count: 1,
+                state: "A",
+                tag: "112",
+              ),
+              cells: ("A", "D", "A", "6", "A", "3", "7", "1"),
+            ),
+            (
+              desc: (
+                label: [New Anchor],
+                avail: 5,
+                count: 1,
+                state: "A",
+                tag: "112",
+              ),
+              cells: ("A", "D", "A", "6", "A", "3", "7", "1"),
+            ),
+          ),
+        )
+      ]
+    ]
+  )
+]
+
+#slide([Allocating from the Active Superblock])[
+  #set align(center)
+  #grid(
+    columns: (100%),
+    rows: (30%, 70%),
+    [
+      #set align(left)
+      #set text(size: 1.4em)
+      
+      Then
+      - get the *next available block* from the superblock
+    ],
+    [
+      #set align(center + horizon)
+      // IMAGES
+      #scale(170%)[
+        #draw-state(
+          credits: 2,
+          active-target: 0,
+          active-hl: (),
+          entries: (
+            (
+              desc: (
+                label: [Real Anchor],
+                avail: 5,
+                count: 1,
+                state: "A",
+                tag: "112",
+              ),
+              cells: ("A", "D", "A", "6", "A", "3", "7", "1"),
+            ),
+            (
+              desc: (
+                label: [New Anchor],
+                avail: 5,
+                count: 1,
+                state: "A",
+                tag: "112",
+              ),
+              cells: ("A", "D", "A", "6", "A", "3", "7", "1"),
+                hl-desc: (0,),
+                hl-sb: (5,),
+            ),
+          ),
+        )
+      ]
+    ]
+  )
+]
+
+#slide([Allocating from the Active Superblock])[
+  #set align(center)
+  #grid(
+    columns: (100%),
+    rows: (30%, 70%),
+    [
+      #set align(left)
+      #set text(size: 1.4em)
+      
+      Then
+      - get the *next available block* from the superblock
+      - update the next available block with the one contained in it
+    ],
+    [
+      #set align(center + horizon)
+      // IMAGES
+      #scale(170%)[
+        #draw-state(
+          credits: 2,
+          active-target: 0,
+          active-hl: (),
+          entries: (
+            (
+              desc: (
+                label: [Real Anchor],
+                avail: 5,
+                count: 1,
+                state: "A",
+                tag: "112",
+              ),
+              cells: ("A", "D", "A", "6", "A", "3", "7", "1"),
+            ),
+            (
+              desc: (
+                label: [New Anchor],
+                avail: 3,
+                count: 1,
+                state: "A",
+                tag: "112",
+              ),
+              cells: ("A", "D", "A", "6", "A", "A", "7", "1"),
+                hl-desc: (0,),
+                hl-sb: (5,),
+            ),
+          ),
+        )
+      ]
+    ]
+  )
+]
+
+#slide([Allocating from the Active Superblock])[
+  #set align(center)
+  #grid(
+    columns: (100%),
+    rows: (30%, 70%),
+    [
+      #set align(left)
+      #set text(size: 1.4em)
+      
+      Then
+      - get the *next available block* from the superblock
+      - update the next available block with the one contained in it
+      - Increment the TAG (to avoid a possible ABA problem)
+    ],
+    [
+      #set align(center + horizon)
+      // IMAGES
+      #scale(170%)[
+        #draw-state(
+          credits: 2,
+          active-target: 0,
+          active-hl: (),
+          entries: (
+            (
+              desc: (
+                label: [Real Anchor],
+                avail: 5,
+                count: 1,
+                state: "A",
+                tag: "112",
+              ),
+              cells: ("A", "D", "A", "6", "A", "3", "7", "1"),
+            ),
+            (
+              desc: (
+                label: [New Anchor],
+                avail: 3,
+                count: 1,
+                state: "A",
+                tag: "113",
+              ),
+              cells: ("A", "D", "A", "6", "A", "A", "7", "1"),
+                hl-desc: (3,),
+                hl-sb: (),
+            ),
+          ),
+        )
+      ]
+    ]
+  )
+]
+
+#slide([Allocating from the Active Superblock])[
+  #set align(center)
+  #grid(
+    columns: (100%),
+    rows: (30%, 70%),
+    [
+      #set align(left)
+      #set text(size: 1.5em)
+      // TEXT
+      What happens if we take the last credit?
+      ```C
+        if (oldactive.credits == 0) { // If we took the last credit
+          if (oldanchor.count == 0) // If there are no more free blocks
+            newanchor.state = FULL;
+          else { // If some blocks were freed in the meantime
+            // Remove the free blocks from the anchor and store
+            // them to update the credits later
+            morecredits = min(oldanchor.count,MAXCREDITS);
+            newanchor.count -= morecredits;  
+          }
+        }
+      ```
+    ],
+    [
+      #set align(center + horizon)
+      // IMAGES
+      #scale(170%)[
+        // DRAW-STATE
+      ]
+    ]
+  )
+]
+
+#slide([Allocating from the Active Superblock])[
+  #set align(center)
+  #grid(
+    columns: (100%),
+    rows: (30%, 70%),
+    [
+      #set align(left)
+      #set text(size: 1.4em)
+      *CAS*: install the new anchor if the old anchor still
+      matches the real one
+    ],
+    [
+      #set align(center + horizon)
+      // IMAGES
+      #scale(170%)[
+        #draw-state(
+          credits: 2,
+          active-target: 2,
+          active-hl: (1,),
+          entries: (
+            (
+              desc: (
+                label: [Real Anchor],
+                avail: 5,
+                count: 1,
+                state: "A",
+                tag: "112",
+              ),
+              cells: ("A", "D", "A", "6", "A", "3", "7", "1"),
+            ),
+            (
+              desc: (
+                label: [Old Anchor],
+                avail: 5,
+                count: 1,
+                state: "A",
+                tag: "112",
+              ),
+              cells: ("A", "D", "A", "6", "A", "3", "7", "1"),
+            ),
+            (
+              desc: (
+                label: [New Anchor],
+                avail: 3,
+                count: 1,
+                state: "A",
+                tag: "113",
+              ),
+              cells: ("A", "D", "A", "6", "A", "A", "7", "1"),
+                hl-desc: (),
+                hl-sb: (),
+            ),
+          ),
+        )
+      ]
+    ]
+  )
+]
+
+#slide([Allocating from the Active Superblock])[
+  #set align(center)
+  #grid(
+    columns: (100%),
+    rows: (30%, 70%),
+    [
+      #set align(left)
+      #set text(size: 1.4em)
+      *CAS*: install the new anchor if the old anchor still
+      matches the real one
+      - If they don't match then restart step 2
+    ],
+    [
+      #set align(center + horizon)
+      // IMAGES
+      #scale(170%)[
+        #draw-state(
+          credits: 2,
+          active-target: 2,
+          active-hl: (1,),
+          entries: (
+            (
+              desc: (
+                label: [Real Anchor],
+                avail: 5,
+                count: 1,
+                state: "A",
+                tag: "112",
+              ),
+              cells: ("A", "D", "A", "6", "A", "3", "7", "1"),
+            ),
+            (
+              desc: (
+                label: [Old Anchor],
+                avail: 5,
+                count: 1,
+                state: "A",
+                tag: "112",
+              ),
+              cells: ("A", "D", "A", "6", "A", "3", "7", "1"),
+            ),
+            (
+              desc: (
+                label: [New Anchor],
+                avail: 3,
+                count: 1,
+                state: "A",
+                tag: "113",
+              ),
+              cells: ("A", "D", "A", "6", "A", "A", "7", "1"),
+                hl-desc: (),
+                hl-sb: (),
+            ),
+          ),
+        )
+      ]
+    ]
+  )
+]
+
+#slide([Updating the Active])[
+  #set align(center)
+  #grid(
+    columns: (100%),
+    rows: (30%, 70%),
+    [
+      #set align(left)
+      #set text(size: 1.4em)
+      What if we have taken extra credits earlier?
+
+      We need to update the Active
+    ],
+    [
+      #set align(left)
+      #text(size: 1.4em)[`morecredits = 4`]
+      #set align(center + horizon)
+      // IMAGES
+      #scale(170%)[
+        // DRAW-STATE
+        #draw-state(
+          credits: 0,
+          active-target: 0,
+          active-hl: (),
+          entries: (
+            (
+              desc: (
+                label: [Real Anchor],
+                avail: 5,
+                count: 0,
+                state: "A",
+                tag: "113",
+              ),
+              cells: ("A", "D", "A", "6", "A", "3", "7", "1"),
+              hl-desc: (),
+              hl-sb: (),
+            ),
+          ),
+        )
+      ]
+    ]
+  )
+]
+
+#slide([Updating the Active])[
+  #set align(center)
+  #grid(
+    columns: (100%),
+    rows: (30%, 70%),
+    [
+      #set align(left)
+      #set text(size: 1.4em)
+      + Create a copy of the old active
+    ],
+    [
+      #set align(left)
+      #text(size: 1.4em)[`morecredits = 4`]
+      #set align(center + horizon)
+      // IMAGES
+      #scale(200%)[
+        #grid(
+          columns: 2,
+          column-gutter: 5em,
+          [
+            #draw-state(
+              credits: 0,
+              active-target: 0,
+              active-hl: (),
+              entries: (),
+            )
+          ],
+          [
+            #draw-state(
+              credits: 0,
+              active-target: 0,
+              active-label: [New Active],
+              active-hl: (),
+              entries: (),
+            )
+          ],
+        )
+      ]
+    ]
+  )
+]
+
+#slide([Updating the Active])[
+  #set align(center)
+  #grid(
+    columns: (100%),
+    rows: (30%, 70%),
+    [
+      #set align(left)
+      #set text(size: 1.4em)
+      + Create a copy of the old active
+      + Add the extra credits to the copy (-1 because 0 is a valid credit)
+    ],
+    [
+      #set align(left)
+      #text(size: 1.4em)[`morecredits = 4`]
+      #set align(center + horizon)
+      // IMAGES
+      #scale(200%)[
+        #grid(
+          columns: 2,
+          column-gutter: 5em,
+          [
+            #draw-state(
+              credits: 0,
+              active-target: 0,
+              active-hl: (),
+              entries: (),
+            )
+          ],
+          [
+            #draw-state(
+              credits: 3,
+              active-target: 0,
+              active-label: [New Active],
+              active-hl: (0,),
+              entries: (),
+            )
+          ],
+        )
+      ]
+    ]
+  )
+]
+
+#slide([Updating the Active])[
+  #set align(center)
+  #grid(
+    columns: (100%),
+    rows: (40%, 60%),
+    [
+      #set align(left)
+      #set text(size: 1.4em)
+      + Create a copy of the old active
+      + Add the extra credits to the copy (-1 because 0 is a valid credit)
+      + Do a *CAS* to attempt installing the new active if the real one was set to NULL.
+        - If it succeeds, the `UpdateActive` returns
+        - Otherwise we have to take an extra step
+    ],
+    [
+      #set align(left)
+      \
+      #text(size: 1.4em)[`morecredits = 4`]
+      #set align(center + horizon)
+      // IMAGES
+      #scale(200%)[
+        #grid(
+          columns: 2,
+          column-gutter: 5em,
+          [
+            #draw-state(
+              credits: 0,
+              active-target: 0,
+              active-hl: (),
+              entries: (),
+            )
+          ],
+          [
+            #draw-state(
+              credits: 3,
+              active-target: 0,
+              active-label: [New Active],
+              active-hl: (0,),
+              entries: (),
+            )
+          ],
+        )
+      ]
+    ]
+  )
+]
+
+#slide([Updating the Active])[
+  #set align(center)
+  #grid(
+    columns: (100%),
+    rows: (30%, 70%),
+    [
+      #set align(left)
+      #set text(size: 1.4em)
+      If the previous CAS fails then a new Active was installed.\
+      We need to "return" the extra credits and set the superblock as `PARTIAL`
+    ],
+    [
+      #set align(left)
+      #text(size: 1.4em)[`morecredits = 4`]
+      #set align(center + horizon)
+      // IMAGES
+      #scale(170%)[
+        // DRAW-STATE
+        #draw-state(
+          credits: 6,
+          active-target: 0,
+          active-hl: (),
+          entries: (
+            (
+              desc: (
+                label: [Real Anchor],
+                avail: none,
+                count: none,
+                state: none,
+                tag: none,
+              ),
+              cells: (),
+              hl-desc: (),
+              hl-sb: (),
+            ),
+          ),
+        )
+        #draw-state(
+          credits: 0,
+          active-target: 0,
+          active-label: [New Active],
+          active-hl: (),
+          entries: (
+            (
+              desc: (
+                label: [Partial Block Anchor],
+                avail: 5,
+                count: 0,
+                state: "A",
+                tag: "113",
+              ),
+              cells: (),
+              hl-desc: (),
+              hl-sb: (),
+            ),
+          ),
+        )
+      ]
+    ]
+  )
+]
+
+#slide([Updating the Active])[
+  #set align(center)
+  #grid(
+    columns: (100%),
+    rows: (30%, 70%),
+    [
+      #set align(left)
+      #set text(size: 1.4em)
+      Create another set of copies
+    
+      `morecredits = 4`
+    ],
+    [
+      #text(size: 1.4em)[]
+      #set align(center + horizon)
+      // IMAGES
+      #scale(170%)[
+        // DRAW-STATE
+        #draw-state(
+          credits: 0,
+          active-target: 0,
+          active-label: [New Active],
+          active-hl: (),
+          entries: (
+            (
+              desc: (
+                label: [Partial Block Anchor],
+                avail: 5,
+                count: 0,
+                state: "A",
+                tag: "113",
+              ),
+              cells: (),
+              hl-desc: (),
+              hl-sb: (),
+            ),
+            (
+              desc: (
+                label: [Old Anchor],
+                avail: 5,
+                count: 0,
+                state: "A",
+                tag: "113",
+              ),
+              cells: (),
+              hl-desc: (),
+              hl-sb: (),
+            ),
+            (
+              desc: (
+                label: [New Anchor],
+                avail: 5,
+                count: 0,
+                state: "A",
+                tag: "113",
+              ),
+              cells: (),
+              hl-desc: (),
+              hl-sb: (),
+            ),
+          ),
+        )
+      ]
+    ]
+  )
+]
+
+#slide([Updating the Active])[
+  #set align(center)
+  #grid(
+    columns: (100%),
+    rows: (30%, 70%),
+    [
+      #set align(left)
+      #set text(size: 1.4em)
+      Return the credits to the count and set the block state to `PARTIAL`
+    
+      `morecredits = 4`
+    ],
+    [
+      #text(size: 1.4em)[]
+      #set align(center + horizon)
+      // IMAGES
+      #scale(170%)[
+        // DRAW-STATE
+        #draw-state(
+          credits: 0,
+          active-target: 0,
+          active-label: [New Active],
+          active-hl: (),
+          entries: (
+            (
+              desc: (
+                label: [Partial Block Anchor],
+                avail: 5,
+                count: 0,
+                state: "A",
+                tag: "113",
+              ),
+              cells: (),
+              hl-desc: (),
+              hl-sb: (),
+            ),
+            (
+              desc: (
+                label: [Old Anchor],
+                avail: 5,
+                count: 0,
+                state: "A",
+                tag: "113",
+              ),
+              cells: (),
+              hl-desc: (),
+              hl-sb: (),
+            ),
+            (
+              desc: (
+                label: [New Anchor],
+                avail: 5,
+                count: 4,
+                state: "P",
+                tag: "113",
+              ),
+              cells: (),
+              hl-desc: (1, 2),
+              hl-sb: (),
+            ),
+          ),
+        )
+      ]
+    ]
+  )
+]
+
+#slide([Updating the Active])[
+  #set align(center)
+  #grid(
+    columns: (100%),
+    rows: (30%, 70%),
+    [
+      #set align(left)
+      #set text(size: 1.4em)
+      *CAS*: install the new anchor for the block if the old
+      anchor still matches the current one
+      - If it fails, create new copies of the real anchor and
+        try again
+      - If it succedes, add the superblock to the heap
+    
+      `morecredits = 4`
+    ],
+    [
+      \
+      #text(size: 1.4em)[]
+      #set align(center + horizon)
+      // IMAGES
+      #scale(150%)[
+        // DRAW-STATE
+        #draw-state(
+          credits: 0,
+          active-target: 2,
+          active-label: [New Active],
+          active-hl: (1,),
+          entries: (
+            (
+              desc: (
+                label: [Partial Block Anchor],
+                avail: 5,
+                count: 0,
+                state: "A",
+                tag: "113",
+              ),
+              cells: (),
+              hl-desc: (),
+              hl-sb: (),
+            ),
+            (
+              desc: (
+                label: [Old Anchor],
+                avail: 5,
+                count: 0,
+                state: "A",
+                tag: "113",
+              ),
+              cells: (),
+              hl-desc: (),
+              hl-sb: (),
+            ),
+            (
+              desc: (
+                label: [New Anchor],
+                avail: 5,
+                count: 4,
+                state: "P",
+                tag: "113",
+              ),
+              cells: (),
+              hl-desc: (),
+              hl-sb: (),
+            ),
+          ),
+        )
+      ]
+    ]
+  )
+]
+
+#slide([Allocating from the Active Superblock])[
+  #set align(center)
+  #grid(
+    columns: (100%),
+    rows: (15%, 70%),
+    [
+      #set align(left)
+      #set text(size: 1.6em)
+      \
+
+      Finally, we return the addresses of the allocated block
+      and the descriptor // TODO: CHECK IF CORRECT
+    ],
+    [
+      #set align(center + horizon)
+      // IMAGES
+      #scale(190%)[
+        // DRAW-STATE
+        #draw-state(
+          credits: 2,
+          active-target: 0,
+          active-hl: (1,),
+          entries: (
+            (
+              desc: (
+                label: [New Anchor],
+                avail: 3,
+                count: 1,
+                state: "A",
+                tag: "113",
+              ),
+              cells: ("A", "D", "A", "6", "A", "A", "7", "1"),
+                hl-desc: (),
+                hl-sb: (5,),
+            ),
+          ),
+        )
+      ]
+    ]
+  )
+]
+
+#slide([Allocating from a Partial superblock])[
+  #set align(center + horizon)
+  #set text(size: 1.7em)
+  == Allocating from a Partial superblock
+]
+
+#slide([Allocating from a Partial superblock])[
+  #set align(center)
+  #grid(
+    columns: (100%),
+    rows: (25%, 70%),
+    [
+      #set align(left)
+      #text(size: 1.7em, weight: "bold")[STEP 1: try getting a Partial superblock]\
+      #set text(size: 1.4em)
 
     ],
     [
-      + Allocate a superblock from the *Unused* heap
+      #set align(center + horizon)
+      // IMAGES
+      #scale(150%)[
+        ```C
+        descriptor* HeapGetPartial(heap) {
+          do {
+            // First, try from the threads procheap
+            desc = heap->Partial;
+            // Otherwise, try from the Size Class' Partial list
+            if (desc == NULL)
+              return ListGetPartial(heap->sc);
+          } until CAS(&heap->Partial,desc,NULL);
+          return desc;
+        }
+        ```
+      ]
+    ]
+  )
+]
+
+
+#slide([Allocating from a Partial superblock])[
+  #set align(center)
+  #grid(
+    columns: (100%),
+    rows: (30%, 70%),
+    [
+      #set align(left)
+      #text(size: 1.7em, weight: "bold")[STEP 2: reserve as many blocks as possible]\
+      #set text(size: 1.4em)
+      - Copy the new descriptor's anchor
+    ],
+    [
+      #set align(center + horizon)
+      // IMAGES
+      #scale(170%)[
+        #draw-state(
+          credits: none,
+          active-target: 0,
+          active-label: "           Desc",
+          active-hl: (),
+          entries: (
+            (
+              desc: (
+                label: [Real Anchor],
+                avail: 5,
+                count: 0,
+                state: "E",
+                tag: "594",
+              ),
+              cells: (),
+              hl-desc: (),
+              hl-sb: (),
+            ),
+            (
+              desc: (
+                label: [Old Anchor],
+                avail: 5,
+                count: 0,
+                state: "E",
+                tag: "594",
+              ),
+              cells: (),
+              hl-desc: (),
+              hl-sb: (),
+            ),
+            (
+              desc: (
+                label: [New Anchor],
+                avail: 5,
+                count: 0,
+                state: "E",
+                tag: "594",
+              ),
+              cells: (),
+              hl-desc: (),
+              hl-sb: (),
+            ),
+          ),
+        )
+      ]
+    ]
+  )
+]
+
+#slide([Allocating from a Partial superblock])[
+  #set align(center)
+  #grid(
+    columns: (100%),
+    rows: (30%, 70%),
+    [
+      #set align(left)
+      #text(size: 1.7em, weight: "bold")[STEP 2: reserve as many blocks as possible]\
+      #set text(size: 1.4em)
+      - Copy the new descriptor's anchor
+        - If empty, retry from step 1, else we know that it must be Partial and that \ `count > 0`
+    ],
+    [
+      #set align(center + horizon)
+      // IMAGES
+      #scale(170%)[
+        #draw-state(
+          credits: none,
+          active-target: 0,
+          active-label: "           Desc",
+          active-hl: (),
+          entries: (
+            (
+              desc: (
+                label: [Real Anchor],
+                avail: 5,
+                count: 0,
+                state: "E",
+                tag: "594",
+              ),
+              cells: (),
+              hl-desc: (),
+              hl-sb: (),
+            ),
+            (
+              desc: (
+                label: [Old Anchor],
+                avail: 5,
+                count: 0,
+                state: "E",
+                tag: "594",
+              ),
+              cells: (),
+              hl-desc: (2,),
+              hl-sb: (),
+            ),
+            (
+              desc: (
+                label: [New Anchor],
+                avail: 5,
+                count: 0,
+                state: "E",
+                tag: "594",
+              ),
+              cells: (),
+              hl-desc: (),
+              hl-sb: (),
+            ),
+          ),
+        )
+      ]
+    ]
+  )
+]
+
+#slide([Allocating from a Partial superblock])[
+  #set align(center)
+  #grid(
+    columns: (100%),
+    rows: (30%, 70%),
+    [
+      #set align(left)
+      #set text(size: 1.4em)
+      Reserve all available credits, keeping one for the current allocation and saving all the extras
+      ```C
+        morecredits = 3 // the 0th credits will be handled by UpdateActive
+      ```
+    ],
+    [
+      #set align(center + horizon)
+      // IMAGES
+      #scale(170%)[
+        #draw-state(
+          credits: none,
+          active-target: 0,
+          active-label: "           Desc",
+          active-hl: (),
+          entries: (
+            (
+              desc: (
+                label: [Real Anchor],
+                avail: 5,
+                count: 4,
+                state: "P",
+                tag: "594",
+              ),
+              cells: (),
+              hl-desc: (),
+              hl-sb: (),
+            ),
+            (
+              desc: (
+                label: [Old Anchor],
+                avail: 5,
+                count: 4,
+                state: "P",
+                tag: "594",
+              ),
+              cells: (),
+              hl-desc: (1,),
+              hl-sb: (),
+            ),
+            (
+              desc: (
+                label: [New Anchor],
+                avail: 5,
+                count: 0,
+                state: "P",
+                tag: "594",
+              ),
+              cells: (),
+              hl-desc: (1,),
+              hl-sb: (),
+            ),
+          ),
+        )
+      ]
+    ]
+  )
+]
+
+#slide([Allocating from a Partial superblock])[
+  #set align(center)
+  #grid(
+    columns: (100%),
+    rows: (30%, 70%),
+    [
+      #set align(left)
+      #set text(size: 1.4em)
+      Set the new state to either Active or Empty, depending on whether or not we have extra credits
+      ```C
+        morecredits = 3 // > 0 so Active
+      ```
+    ],
+    [
+      #set align(center + horizon)
+      // IMAGES
+      #scale(170%)[
+        #draw-state(
+          credits: none,
+          active-target: 0,
+          active-label: "           Desc",
+          active-hl: (),
+          entries: (
+            (
+              desc: (
+                label: [Real Anchor],
+                avail: 5,
+                count: 4,
+                state: "P",
+                tag: "594",
+              ),
+              cells: (),
+              hl-desc: (),
+              hl-sb: (),
+            ),
+            (
+              desc: (
+                label: [Old Anchor],
+                avail: 5,
+                count: 4,
+                state: "P",
+                tag: "594",
+              ),
+              cells: (),
+              hl-desc: (),
+              hl-sb: (),
+            ),
+            (
+              desc: (
+                label: [New Anchor],
+                avail: 5,
+                count: 0,
+                state: "A",
+                tag: "594",
+              ),
+              cells: (),
+              hl-desc: (2,),
+              hl-sb: (),
+            ),
+          ),
+        )
+      ]
+    ]
+  )
+]
+
+#slide([Allocating from a Partial superblock])[
+  #set align(center)
+  #grid(
+    columns: (100%),
+    rows: (30%, 70%),
+    [
+      #set align(left)
+      #set text(size: 1.4em)
+      *CAS* operation to install the new anchor. If this fails, retry step 2
+      ```C
+        morecredits = 3
+      ```
+    ],
+    [
+      #set align(center + horizon)
+      // IMAGES
+      #scale(170%)[
+        #draw-state(
+          credits: none,
+          active-target: 2,
+          active-label: "           Desc",
+          active-hl: (1,),
+          entries: (
+            (
+              desc: (
+                label: [Real Anchor],
+                avail: 5,
+                count: 4,
+                state: "P",
+                tag: "594",
+              ),
+              cells: (),
+              hl-desc: (),
+              hl-sb: (),
+            ),
+            (
+              desc: (
+                label: [Old Anchor],
+                avail: 5,
+                count: 4,
+                state: "P",
+                tag: "594",
+              ),
+              cells: (),
+              hl-desc: (),
+              hl-sb: (),
+            ),
+            (
+              desc: (
+                label: [New Anchor],
+                avail: 5,
+                count: 0,
+                state: "A",
+                tag: "594",
+              ),
+              cells: (),
+              hl-desc: (),
+              hl-sb: (),
+            ),
+          ),
+        )
+      ]
+    ]
+  )
+]
+
+#slide([Allocating from a Partial superblock])[
+  #set align(center)
+  #grid(
+    columns: (100%),
+    rows: (30%, 70%),
+    [
+      #set align(left)
+      #text(size: 1.7em, weight: "bold")[STEP 3: pop a block and update the descriptor]\
+      #set text(size: 1.4em)
+      - As always, copy the anchor
+      ```C
+        morecredits = 3
+      ```
+    ],
+    [
+      #set align(center + horizon)
+      // IMAGES
+      #scale(170%)[
+        #draw-state(
+          credits: none,
+          active-target: 0,
+          active-label: "           Desc",
+          entries: (
+            (
+              desc: (
+                label: [Real Anchor],
+                avail: 5,
+                count: 0,
+                state: "A",
+                tag: "594",
+              ),
+              cells: ("A", "D", "A", "6", "A", "3", "7", "1"),
+            ),
+            (
+              desc: (
+                label: [Old Anchor],
+                avail: 5,
+                count: 0,
+                state: "A",
+                tag: "594",
+              ),
+              cells: ("A", "D", "A", "6", "A", "3", "7", "1"),
+            ),
+            (
+              desc: (
+                label: [New Anchor],
+                avail: 5,
+                count: 0,
+                state: "A",
+                tag: "594",
+              ),
+              cells: ("A", "D", "A", "6", "A", "3", "7", "1"),
+                hl-desc: (),
+                hl-sb: (),
+            ),
+          ),
+        )
+      ]
+    ]
+  )
+]
+
+#slide([Allocating from a Partial superblock])[
+  #set align(center)
+  #grid(
+    columns: (100%),
+    rows: (30%, 70%),
+    [
+      #set align(left)
+      #text(size: 1.7em, weight: "bold")[STEP 3: pop a block and update the descriptor]\
+      #set text(size: 1.4em)
+      - As always, copy the anchor
+      - Update the next available block
+      ```C
+        morecredits = 3
+      ```
+    ],
+    [
+      #set align(center + horizon)
+      // IMAGES
+      #scale(170%)[
+        #draw-state(
+          credits: none,
+          active-target: 0,
+          active-label: "           Desc",
+          entries: (
+            (
+              desc: (
+                label: [Real Anchor],
+                avail: 5,
+                count: 0,
+                state: "A",
+                tag: "594",
+              ),
+              cells: ("A", "D", "A", "6", "A", "3", "7", "1"),
+            ),
+            (
+              desc: (
+                label: [New Anchor],
+                avail: 3,
+                count: 0,
+                state: "A",
+                tag: "594",
+              ),
+              cells: ("A", "D", "A", "6", "A", "A", "7", "1"),
+                hl-desc: (0,),
+                hl-sb: (5,),
+            ),
+          ),
+        )
+      ]
+    ]
+  )
+]
+
+#slide([Allocating from a Partial superblock])[
+  #set align(center)
+  #grid(
+    columns: (100%),
+    rows: (30%, 70%),
+    [
+      #set align(left)
+      #text(size: 1.7em, weight: "bold")[STEP 3: pop a block and update the descriptor]\
+      #set text(size: 1.4em)
+      - As always, copy the anchor
+      - Update the next available block
+      - Increment the TAG
+      ```C
+        morecredits = 3
+      ```
+    ],
+    [
+      #set align(center + horizon)
+      // IMAGES
+      #scale(170%)[
+        #draw-state(
+          credits: none,
+          active-target: 0,
+          active-label: "           Desc",
+          entries: (
+            (
+              desc: (
+                label: [Real Anchor],
+                avail: 5,
+                count: 0,
+                state: "A",
+                tag: "594",
+              ),
+              cells: ("A", "D", "A", "6", "A", "3", "7", "1"),
+            ),
+            (
+              desc: (
+                label: [New Anchor],
+                avail: 3,
+                count: 0,
+                state: "A",
+                tag: "595",
+              ),
+              cells: ("A", "D", "A", "6", "A", "A", "7", "1"),
+                hl-desc: (3,),
+                hl-sb: (),
+            ),
+          ),
+        )
+      ]
+    ]
+  )
+]
+
+#slide([Allocating from a Partial superblock])[
+  #set align(center)
+  #grid(
+    columns: (100%),
+    rows: (30%, 70%),
+    [
+      #set align(left)
+      #text(size: 1.7em, weight: "bold")[STEP 3: pop a block and update the descriptor]\
+      #set text(size: 1.4em)
+      - As always, copy the anchor
+      - Update the next available block
+      - Increment the TAG
+      - Do a *CAS* to install the new anchor if the current one still matches the old one, else retry step 3
+    ],
+    [
+      #set align(center + horizon)
+      // IMAGES
+      #scale(170%)[
+        #draw-state(
+          credits: none,
+          active-target: 1,
+          active-label: "           Desc",
+          active-hl: (1,),
+          entries: (
+            (
+              desc: (
+                label: [Real Anchor],
+                avail: 5,
+                count: 0,
+                state: "A",
+                tag: "594",
+              ),
+              cells: ("A", "D", "A", "6", "A", "3", "7", "1"),
+            ),
+            (
+              desc: (
+                label: [New Anchor],
+                avail: 3,
+                count: 0,
+                state: "A",
+                tag: "595",
+              ),
+              cells: ("A", "D", "A", "6", "A", "A", "7", "1"),
+                hl-desc: (),
+                hl-sb: (),
+            ),
+          ),
+        )
+      ]
+    ]
+  )
+]
+
+#slide([Allocating from a Partial superblock])[
+  #set align(center)
+  #grid(
+    columns: (100%),
+    rows: (60%, 70%),
+    [
+      #set align(left)
+      #text(size: 1.7em, weight: "bold")[STEP 4: handle remaining credits and return]\
+      #set text(size: 1.4em)
+
+      Just like the allocation from the Active superblock, if
+      we have extra credits we are going to call
+      `UpdateActive` to either:
+      - Install this superblock as active with the remaining credits
+      - Set the superblock as Partial again and give it back the credits (as `anchor.count`)
+      
+      \
+      In any case, we return the address of the popped block
+      plus the address of the descriptor. // TODO: CHECK IF CORRECT
     ],
   )
 ]
 
-#slide("Allocating from a New superblock (2/v)")[
-  #grid(
-    columns: (50%, 50%),
-    align: (x, y) => {
-      if (x == 0) {
-        center + horizon
-      } else {
-        left + horizon
-      }
-    },
-    [
-
-    ],
-    [
-      + Allocate a superblock from the *Unused* heap
-        - Organize the blocks in a linked list
-    ],
-  )
+#slide([Allocating from a new superblock])[
+  #set align(center + horizon)
+  #set text(size: 1.7em)
+  == Allocating from a New Superblock
 ]
 
-#slide("Allocating from a New superblock (3/v)")[
-  #grid(
-    columns: (50%, 50%),
-    align: (x, y) => {
-      if (x == 0) {
-        center + horizon
-      } else {
-        left + horizon
-      }
-    },
-    [
-
-    ],
-    [
-      + Allocate a superblock from the *Unused* heap
-        - Organize the blocks in a linked list
-        - Set *first_available_block* to 1
-    ],
-  )
+#slide([Allocating from a new superblock])[
+  #set align(left)
+  #set text(size: 1.4em)
+  Allocating from a new superblock involves:
+  + Allocating the descriptor and superblock given the
+    information from the `procheap`'s size class
+  + Set the anchor's next available block to 1 so that 0 is
+    reserved and the state to `ACTIVE`
+  + Do a *CAS*, checking if the active superblock is still
+    null and trying to install this new one as active
+    // TODO: CHECK IF CORRECT
+    - If successful, return the addresses of block 0 and the `desc`
+    - If it fails, then someone else has installed a new
+      active block. Free the new block and return NULL.
 ]
 
-#slide("Allocating from a New superblock (4/v)")[
+// #######################################
+// #######################################
+// #######################################
+// #######################################
+
+/*
+#slide([Template slide, REMOVE])[
+  #set align(center)
   #grid(
-    columns: (50%, 50%),
-    align: (x, y) => {
-      if (x == 0) {
-        center + horizon
-      } else {
-        left + horizon
-      }
-    },
+    columns: (100%),
+    rows: (30%, 70%),
     [
-
+      #set align(left)
+      #set text(size: 1.4em)
+      // TEXT
     ],
     [
-      + Allocate a superblock from the *Unused* heap
-        - Organize the blocks in a linked list
-        - Set *first_available_block* to 1
-        - Reserve credits for future bookings
-    ],
-  )
-]
-
-#slide("Allocating from a New superblock (5/v)")[
-  #grid(
-    columns: (50%, 50%),
-    align: (x, y) => {
-      if (x == 0) {
-        center + horizon
-      } else {
-        left + horizon
-      }
-    },
-    [
-
-    ],
-    [
-      + Allocate a superblock from the *Unused* heap
-        - Organize the blocks in a linked list
-        - Set *first_available_block* to 1
-        - Reserve credits for future bookings
-        - Decrement *number_free_blocks* considering that 1 block is for the current thread
-    ],
-  )
-]
-
-#slide("Allocating from a New superblock (6/v)")[
-  #grid(
-    columns: (50%, 50%),
-    align: (x, y) => {
-      if (x == 0) {
-        center + horizon
-      } else {
-        left + horizon
-      }
-    },
-    [
-
-    ],
-    [
-      + Allocate a superblock from the *Unused* heap
-        - Organize the blocks in a linked list
-        - Set *first_available_block* to 1
-        - Reserve credits for future bookings
-        - Decrement *number_free_blocks* considering that 1 block is for the current thread
-      + *CAS*: try to set the new superblock as the *Active* one
-        - If *not successful*: this means that there was an available superblock, abort
-        - If *successful*, return the address of the new block
-    ],
+      #set align(center + horizon)
+      // IMAGES
+      #scale(170%)[
+        // DRAW-STATE
+      ]
+    ]
   )
 ]
