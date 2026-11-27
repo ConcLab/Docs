@@ -14,7 +14,7 @@
     [
       #figure(
         caption: "Pointer structure",
-        image("../img/free/free-Pointer_struct.drawio.svg"),
+        image("../img/part3/free-Pointer_struct.drawio.svg"),
       )
 
     ],
@@ -45,7 +45,7 @@
     [
       #figure(
         caption: "Free algorithm - Descriptor recovery",
-        image("../img/free/free-descriptor_recovered.drawio.svg"),
+        image("../img/part3/free-descriptor_recovered.drawio.svg"),
       )
     ],
     [
@@ -68,7 +68,7 @@
     [
       #figure(
         caption: "Free algorithm - Anchor copy",
-        image("../img/free/free-Anchor_recovered.drawio.svg"),
+        image("../img/part3/free-Anchor_recovered.drawio.svg"),
       )
     ],
     [
@@ -92,7 +92,7 @@
     [
       #figure(
         caption: "Free algorithm - current block index retrieval",
-        image("../img/free/free-Avail_mod.drawio.svg"),
+        image("../img/part3/free-Avail_mod.drawio.svg"),
       )
     ],
     [
@@ -118,7 +118,7 @@
     [
       #figure(
         caption: "Free algorithm - Current state retrieval",
-        image("../img/free/free-State_check.drawio.svg"),
+        image("../img/part3/free-State_check.drawio.svg"),
       )
     ],
     [
@@ -147,7 +147,7 @@
     [
       #figure(
         caption: "Free algorithm - Count incrementation",
-        image("../img/free/free-Increment_avail.drawio.svg"),
+        image("../img/part3/free-Increment_avail.drawio.svg"),
       )
     ],
     [
@@ -177,7 +177,7 @@
     [
       #figure(
         caption: "Free algorithm - Anchor overwrite",
-        image("../img/free/free-CAS_Anchor.drawio.svg"),
+        image("../img/part3/free-CAS_Anchor.drawio.svg"),
       )
     ],
     [
@@ -209,7 +209,7 @@
     [
       #figure(
         caption: "Free algorithm - Empty Superblock check",
-        image("../img/free/free-CAS_Empty.drawio.svg"),
+        image("../img/part3/free-CAS_Empty.drawio.svg"),
       )
     ],
     [
@@ -244,7 +244,7 @@
     [
       #figure(
         caption: "Free algorithm - Full Superblock check",
-        image("../img/free/free-CAS_Full.drawio.svg"),
+        image("../img/part3/free-CAS_Full.drawio.svg"),
       )
     ],
     [
@@ -278,7 +278,7 @@
       #v(50%)
       #figure(
         caption: "Partial list problem - Example",
-        image("../img/free/free-free_empty.drawio.svg"),
+        image("../img/part3/free-free_empty.drawio.svg"),
       )
       #v(50%)
     ],
@@ -305,7 +305,7 @@
       #v(50%)
       #figure(
         caption: "Partial list problem - Solution",
-        image("../img/free/free-free_empty_cleaned.drawio.svg", width: 70.5%),
+        image("../img/part3/free-free_empty_cleaned.drawio.svg", width: 70.5%),
       )
       #v(50%)
     ],
@@ -341,7 +341,7 @@
       #v(50%)
       #figure(
         caption: "Retrieving descriptors - DescAvail",
-        image("../img/free/free-DescAvail.drawio.svg"),
+        image("../img/part3/free-DescAvail.drawio.svg"),
       )
       #v(50%)
     ],
@@ -368,7 +368,7 @@
       #v(50%)
       #figure(
         caption: "Retrieving descriptors - Descriptor retrieval",
-        image("../img/free/free-CopyDesc.drawio.svg"),
+        image("../img/part3/free-CopyDesc.drawio.svg"),
       )
       #v(50%)
     ],
@@ -398,7 +398,7 @@
       #v(50%)
       #figure(
         caption: "Retrieving descriptors - DescAvail overwrite",
-        image("../img/free/free-CAS_DescAvail.drawio.svg"),
+        image("../img/part3/free-CAS_DescAvail.drawio.svg"),
       )
       #v(50%)
     ],
@@ -429,7 +429,7 @@
       #v(50%)
       #figure(
         caption: "Retrieving descriptors - Final result of Desc retrieval",
-        image("../img/free/free-DescAvail_Final.drawio.svg"),
+        image("../img/part3/free-DescAvail_Final.drawio.svg"),
       )
       #v(50%)
     ],

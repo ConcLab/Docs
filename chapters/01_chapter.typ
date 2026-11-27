@@ -140,7 +140,25 @@
 }
 
 #slide("Overview")[
+  #set list(
+    marker: [
+      #v(-0.3em)
+      #image("../img/part1/icon-park-outline--chip.svg", width: 1.3em)
+    ],
+    marker-align: left + horizon,
+  )
 
+  #set text(1.2em)
+  #align(left + horizon)[
+    - Introduction
+    - Existing solution
+    - The paper solution
+    - Structures
+    - The allocation alghorithm
+    - The free alghorithm
+    - Performance
+    - Extra...
+  ]
 ]
 
 #slide("Introduction to memory allocation (1/x)")[
@@ -305,7 +323,7 @@
           invocation
     ],
     [
-      #image("../img/mdi--lock.svg", width: 20%)
+      #image("../img/part1/mdi--lock.svg", width: 20%)
     ],
   )
 ]
@@ -326,7 +344,7 @@
           invocation
     ],
     [
-      #image("../img/mdi--lock.svg", width: 20%)
+      #image("../img/part1/mdi--lock.svg", width: 20%)
     ],
   )
 
@@ -363,7 +381,7 @@
           invocation
     ],
     [
-      #image("../img/mdi--lock.svg", width: 20%)
+      #image("../img/part1/mdi--lock.svg", width: 20%)
     ],
   )
 
@@ -404,7 +422,7 @@
           invocation
     ],
     [
-      #image("../img/mdi--lock.svg", width: 20%)
+      #image("../img/part1/mdi--lock.svg", width: 20%)
     ],
   )
 
@@ -455,7 +473,7 @@
       ],
       [
 
-        #image("../img/mdi--format-list-bulleted-square.svg", width: 20%)
+        #image("../img/part1/mdi--format-list-bulleted-square.svg", width: 20%)
         #hint(
           [
             *Note on LL/SC*
@@ -543,7 +561,7 @@
         #v(50%)
         #figure(
           caption: "Allocator structures - Superblocks",
-          image("../img/fig1.svg", width: 60%),
+          image("../img/part1/fig1.svg", width: 60%),
         )
         #v(50%)
       ],
@@ -575,7 +593,7 @@
         #v(50%)
         #figure(
           caption: "Allocator structures - Blocks",
-          image("../img/fig2.svg", width: 80%),
+          image("../img/part1/fig2.svg", width: 80%),
         )
         #v(50%)
       ],
@@ -608,7 +626,7 @@
         #v(50%)
         #figure(
           caption: "Allocator structures - Size classes",
-          image("../img/fig3.svg", width: 95%),
+          image("../img/part1/fig3.svg", width: 95%),
         )
         #v(50%)
       ],
@@ -879,7 +897,7 @@
           kind: image,
           caption: "Size Class details",
           [
-            #image("../img/sizeclass.svg")
+            #image("../img/part1/sizeclass.svg")
           ],
         )
         #v(50%)
@@ -915,10 +933,10 @@
             #grid(
               columns: (50%, 50%),
               [
-                #image("../img/sizeclass.svg")
+                #image("../img/part1/sizeclass.svg")
               ],
               [
-                #image("../img/ProcHeap.svg", width: 110%)
+                #image("../img/part1/ProcHeap.svg", width: 110%)
               ],
             )
           ],
@@ -962,14 +980,14 @@
             #grid(
               columns: (50%, 50%),
               [
-                #image("../img/sizeclass.svg")
+                #image("../img/part1/sizeclass.svg")
               ],
               [
-                #image("../img/ProcHeap.svg", width: 110%)
+                #image("../img/part1/ProcHeap.svg", width: 110%)
               ],
               grid.cell(colspan: 2)[
                 #v(1em)
-                #image("../img/Descriptor.svg")
+                #image("../img/part1/Descriptor.svg")
               ],
             )
           ],
